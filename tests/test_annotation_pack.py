@@ -1,6 +1,8 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from fer_meetings.annotation_pack import build_prediction_index, summarize_predictions
+from fer_meetings.annotation_pack import build_prediction_index, render_html, summarize_predictions
 
 
 class AnnotationPackTests(unittest.TestCase):
@@ -38,6 +40,43 @@ class AnnotationPackTests(unittest.TestCase):
         self.assertEqual(summary["suggested_label"], "negative")
         self.assertEqual(summary["suggested_confidence"], "0.800")
         self.assertIn("cnn_a=negative (0.800)", summary["suggestion_summary"])
+
+    def test_render_html_includes_interactive_label_controls(self):
+        rows = [
+            {
+                "clip_id": "clip_1",
+                "split": "dev",
+                "video_file": "clip_1-video.mp4",
+                "meeting_id": "meeting_a",
+                "camera": "speaker_A",
+                "clip_start_s": "0.000",
+                "clip_end_s": "3.500",
+                "video_path": "/tmp/clip_1-video.mp4",
+                "thumbnail_path": "thumbnails/clip_1.jpg",
+                "rater_1_label": "",
+                "rater_2_label": "",
+                "adjudicated_label": "",
+                "gold_label": "neutral",
+                "annotator": "tester",
+                "adjudicator": "",
+                "exclude_from_gold": "false",
+                "agreement_status": "",
+                "notes": "example",
+                "suggested_label": "negative",
+                "suggested_confidence": "0.800",
+                "face_detected_ratio": "1.000",
+                "suggestion_summary": "cnn_a=negative (0.800)",
+            }
+        ]
+        with TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / "index.html"
+            render_html(rows, Path(temp_dir), output_path)
+            html_text = output_path.read_text(encoding="utf-8")
+
+        self.assertIn("Guardar CSV", html_text)
+        self.assertIn("data-action=\"set-label\"", html_text)
+        self.assertIn("window.showSaveFilePicker", html_text)
+        self.assertIn("\"clip_id\": \"clip_1\"", html_text)
 
 
 if __name__ == "__main__":

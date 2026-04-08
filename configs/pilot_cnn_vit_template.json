@@ -1,0 +1,34 @@
+{
+  "experiment_name": "ami_cnn_vit_clip_transfer",
+  "sampling": {
+    "clip_seconds": 3.0,
+    "stride_seconds": 12.0,
+    "start_offset_seconds": 30.0,
+    "max_clips_per_video": 25,
+    "frames_per_clip": 5
+  },
+  "videos": {
+    "dev": [
+      "ES2003a.Closeup1.avi",
+      "ES2003a.Closeup2.avi"
+    ],
+    "test": [
+      "ES2004a.Closeup1.avi",
+      "ES2004a.Closeup2.avi"
+    ]
+  },
+  "models": [
+    {
+      "name": "cnn_convnext_fer",
+      "hf_model_id": "DrGM/DrGM-ConvNeXt-V2L-Facial-Emotion-Recognition",
+      "family": "cnn",
+      "face_detector": "haar"
+    },
+    {
+      "name": "vit_fer2013",
+      "hf_model_id": "trpakov/vit-face-expression",
+      "family": "vit",
+      "face_detector": "haar"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fer-meetings"
+version = "0.1.0"
+description = "Replicable pilot study for zero-shot facial emotion transfer from FER models to AMI meeting videos."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "datasets>=2.19,<4",
+    "matplotlib>=3.8,<4",
+    "numpy>=1.26,<2",
+    "opencv-python>=4.10,<5",
+    "Pillow>=10,<12",
+    "scikit-learn>=1.4,<2",
+    "torch>=2.2,<3",
+    "transformers>=4.40,<5",
+]
+
+[project.scripts]
+fer-build-annotation-pack = "fer_meetings.annotation_pack:main"
+fer-build-manifest = "fer_meetings.build_manifest:main"
+fer-build-ami-av-manifest = "fer_meetings.build_ami_av_manifest:main"
+fer-build-scenario-splits = "fer_meetings.scenario_splits:main"
+fer-compute-interrater = "fer_meetings.interrater:main"
+fer-generate-reporting = "fer_meetings.reporting:main"
+fer-run-experiment = "fer_meetings.experiment:main"
+fer-fetch-ami-av-subset = "fer_meetings.fetch_ami_av_subset:main"
+fer-fetch-hf-data = "fer_meetings.hf_data:main"
+fer-make-label-template = "fer_meetings.label_template:main"
+fer-run-pilot = "fer_meetings.run_pilot:main"
+fer-evaluate = "fer_meetings.evaluate:main"
+fer-train-clip-models = "fer_meetings.train_clip_models:main"
+fer-make-paper-assets = "fer_meetings.paper_assets:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

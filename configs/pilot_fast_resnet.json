@@ -1,0 +1,16 @@
+{
+  "experiment_name": "ami_zero_shot_pilot_resnet",
+  "sampling": {
+    "clip_seconds": 3.0,
+    "stride_seconds": 12.0,
+    "start_offset_seconds": 30.0,
+    "max_clips_per_video": 25,
+    "frames_per_clip": 3
+  },
+  "model": {
+    "hf_model_id": "Celal11/resnet-50-finetuned-FER2013-0.001",
+    "face_detector": "haar",
+    "family": "cnn",
+    "name": "resnet50-fer2013"
+  }
+}

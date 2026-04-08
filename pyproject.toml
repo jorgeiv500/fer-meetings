@@ -21,7 +21,6 @@ dependencies = [
 
 [project.scripts]
 fer-build-annotation-pack = "fer_meetings.annotation_pack:main"
-fer-build-manifest = "fer_meetings.build_manifest:main"
 fer-build-ami-av-manifest = "fer_meetings.build_ami_av_manifest:main"
 fer-build-scenario-splits = "fer_meetings.scenario_splits:main"
 fer-compute-interrater = "fer_meetings.interrater:main"
@@ -29,7 +28,6 @@ fer-generate-reporting = "fer_meetings.reporting:main"
 fer-run-experiment = "fer_meetings.experiment:main"
 fer-fetch-ami-av-subset = "fer_meetings.fetch_ami_av_subset:main"
 fer-fetch-hf-data = "fer_meetings.hf_data:main"
-fer-make-label-template = "fer_meetings.label_template:main"
 fer-run-pilot = "fer_meetings.run_pilot:main"
 fer-evaluate = "fer_meetings.evaluate:main"
 fer-train-clip-models = "fer_meetings.train_clip_models:main"

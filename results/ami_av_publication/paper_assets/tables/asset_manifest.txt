@@ -1,0 +1,26 @@
+Generated paper assets:
+- tables/main_model_comparison.csv
+- tables/main_model_comparison.md
+- tables/roc_curves.csv (if probability curves exist)
+- tables/pr_curves.csv (if probability curves exist)
+- tables/main_per_class_metrics.csv (if per-class metrics exist)
+- tables/main_per_class_metrics.md (if per-class metrics exist)
+- tables/clip_model_comparison.csv (if clip-model metrics exist)
+- tables/clip_model_comparison.md (if clip-model metrics exist)
+- tables/clip_model_per_class_metrics.csv (if clip-model per-class metrics exist)
+- tables/clip_model_per_class_metrics.md (if clip-model per-class metrics exist)
+- tables/attention_pooling_history.csv (if attention pooling history exists)
+- tables/attention_pooling_history.md (if attention pooling history exists)
+- tables/dataset_summary.csv (if manifest is provided)
+- tables/dataset_summary.md (if manifest is provided)
+- tables/label_distribution.csv (if labels are provided)
+- tables/label_distribution.md (if labels are provided)
+- figures/main_test_macro_f1.png
+- figures/main_test_accuracy.png
+- figures/main_test_balanced_accuracy.png
+- figures/main_test_roc_ovr.png (if probability curves exist)
+- figures/main_test_pr_ovr.png (if probability curves exist)
+- figures/clip_models_macro_f1.png (if clip-model metrics exist)
+- figures/attention_pooling_training.png (if training history exists)
+- figures/label_distribution.png (if labels are provided)
+- figures/confusion_*.png

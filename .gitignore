@@ -19,3 +19,6 @@ extracted/
 !data/interim/.gitkeep
 !data/annotations/.gitkeep
 !results/.gitkeep
+!data/interim/ami_av_manifest_publication.csv
+!results/ami_av_publication/
+!results/ami_av_publication/**

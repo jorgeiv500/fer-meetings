@@ -6,10 +6,15 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
     balanced_accuracy_score,
+    brier_score_loss,
     confusion_matrix,
     f1_score,
     precision_recall_fscore_support,
+    roc_auc_score,
+    roc_curve,
+    precision_recall_curve,
 )
 
 from fer_meetings.constants import LABEL_ORDER
@@ -79,6 +84,79 @@ def metric_bundle(rows, prediction_column):
     }
 
 
+def one_hot_labels(rows):
+    gold_indices = [LABEL_ORDER.index(row["gold_label"]) for row in rows]
+    matrix = np.zeros((len(rows), len(LABEL_ORDER)), dtype=float)
+    for row_index, label_index in enumerate(gold_indices):
+        matrix[row_index, label_index] = 1.0
+    return matrix
+
+
+def probability_metric_bundle(rows, probability_prefix):
+    probabilities = probability_matrix(rows, probability_prefix)
+    if probabilities.size == 0:
+        return {}
+    y_true = one_hot_labels(rows)
+    metrics = {}
+    try:
+        metrics["auroc_ovr"] = roc_auc_score(y_true, probabilities, average="macro", multi_class="ovr")
+    except ValueError:
+        metrics["auroc_ovr"] = ""
+    try:
+        metrics["auprc_macro"] = average_precision_score(y_true, probabilities, average="macro")
+    except ValueError:
+        metrics["auprc_macro"] = ""
+    brier_scores = []
+    for label_index in range(len(LABEL_ORDER)):
+        try:
+            brier_scores.append(brier_score_loss(y_true[:, label_index], probabilities[:, label_index]))
+        except ValueError:
+            continue
+    metrics["brier_macro"] = float(np.mean(brier_scores)) if brier_scores else ""
+    return metrics
+
+
+def curve_rows(model_name, model_family, model_id, scope, method, rows, probability_prefix):
+    probabilities = probability_matrix(rows, probability_prefix)
+    y_true = one_hot_labels(rows)
+    roc_rows = []
+    pr_rows = []
+    for label_index, label in enumerate(LABEL_ORDER):
+        positives = int(y_true[:, label_index].sum())
+        negatives = int((1.0 - y_true[:, label_index]).sum())
+        if positives == 0 or negatives == 0:
+            continue
+        fpr, tpr, _ = roc_curve(y_true[:, label_index], probabilities[:, label_index])
+        precision, recall, _ = precision_recall_curve(y_true[:, label_index], probabilities[:, label_index])
+        for x_value, y_value in zip(fpr, tpr):
+            roc_rows.append(
+                {
+                    "model_name": model_name,
+                    "model_family": model_family,
+                    "hf_model_id": model_id,
+                    "scope": scope,
+                    "method": method,
+                    "label": label,
+                    "x": float(x_value),
+                    "y": float(y_value),
+                }
+            )
+        for recall_value, precision_value in zip(recall, precision):
+            pr_rows.append(
+                {
+                    "model_name": model_name,
+                    "model_family": model_family,
+                    "hf_model_id": model_id,
+                    "scope": scope,
+                    "method": method,
+                    "label": label,
+                    "x": float(recall_value),
+                    "y": float(precision_value),
+                }
+            )
+    return roc_rows, pr_rows
+
+
 def per_class_metric_rows(model_name, model_family, model_id, scope, method, rows, prediction_column):
     y_true = [row["gold_label"] for row in rows]
     y_pred = [row[prediction_column] for row in rows]
@@ -129,12 +207,15 @@ def maybe_fit_calibrator(rows):
 
     model = LogisticRegression(max_iter=1000, multi_class="multinomial")
     model.fit(probability_matrix(dev_rows, "smoothed"), dev_labels)
-    calibrated_indices = model.predict(probability_matrix(test_rows, "smoothed"))
+    calibrated_probabilities = model.predict_proba(probability_matrix(test_rows, "smoothed"))
+    calibrated_indices = calibrated_probabilities.argmax(axis=1)
 
     calibrated_rows = []
-    for row, predicted_index in zip(test_rows, calibrated_indices):
+    for row, predicted_index, probability_row in zip(test_rows, calibrated_indices, calibrated_probabilities):
         calibrated_row = dict(row)
         calibrated_row["smoothed_calibrated"] = LABEL_ORDER[int(predicted_index)]
+        for label_index, label in enumerate(LABEL_ORDER):
+            calibrated_row[f"smoothed_calibrated_{label}_prob"] = f"{float(probability_row[label_index]):.6f}"
         calibrated_rows.append(calibrated_row)
     return calibrated_rows
 
@@ -228,14 +309,17 @@ def main():
 
     scopes = ["all"] + sorted({row["split"] for row in merged_rows})
     methods = [
-        ("single_frame", "single_frame_label"),
-        ("smoothed", "smoothed_label"),
-        ("vote", "vote_label"),
+        ("single_frame", "single_frame_label", "single_frame"),
+        ("smoothed", "smoothed_label", "smoothed"),
+        ("vote", "vote_label", ""),
     ]
 
     metrics_rows = []
     confusion_rows = []
     per_class_rows = []
+    probability_metric_rows = []
+    roc_curve_rows = []
+    pr_curve_rows = []
     notes = []
     calibrated_prediction_rows = []
 
@@ -244,8 +328,9 @@ def main():
             scoped_rows = rows_for_scope(model_rows, scope)
             if not scoped_rows:
                 continue
-            for method_name, prediction_column in methods:
+            for method_name, prediction_column, probability_prefix in methods:
                 bundle = metric_bundle(scoped_rows, prediction_column)
+                probability_metrics = probability_metric_bundle(scoped_rows, probability_prefix) if probability_prefix else {}
                 metrics_rows.append(
                     {
                         "model_name": model_name,
@@ -257,6 +342,9 @@ def main():
                         "accuracy": bundle["accuracy"],
                         "balanced_accuracy": bundle["balanced_accuracy"],
                         "macro_f1": bundle["macro_f1"],
+                        "auroc_ovr": probability_metrics.get("auroc_ovr", ""),
+                        "auprc_macro": probability_metrics.get("auprc_macro", ""),
+                        "brier_macro": probability_metrics.get("brier_macro", ""),
                     }
                 )
                 confusion_rows.extend(
@@ -280,6 +368,18 @@ def main():
                         prediction_column,
                     )
                 )
+                if probability_prefix:
+                    method_roc_rows, method_pr_rows = curve_rows(
+                        model_name,
+                        model_family,
+                        model_id,
+                        scope,
+                        method_name,
+                        scoped_rows,
+                        probability_prefix,
+                    )
+                    roc_curve_rows.extend(method_roc_rows)
+                    pr_curve_rows.extend(method_pr_rows)
 
         if args.fit_calibrator:
             calibrated_rows = maybe_fit_calibrator(model_rows)
@@ -289,6 +389,7 @@ def main():
                 )
             else:
                 bundle = metric_bundle(calibrated_rows, "smoothed_calibrated")
+                probability_metrics = probability_metric_bundle(calibrated_rows, "smoothed_calibrated")
                 metrics_rows.append(
                     {
                         "model_name": model_name,
@@ -300,6 +401,9 @@ def main():
                         "accuracy": bundle["accuracy"],
                         "balanced_accuracy": bundle["balanced_accuracy"],
                         "macro_f1": bundle["macro_f1"],
+                        "auroc_ovr": probability_metrics.get("auroc_ovr", ""),
+                        "auprc_macro": probability_metrics.get("auprc_macro", ""),
+                        "brier_macro": probability_metrics.get("brier_macro", ""),
                     }
                 )
                 confusion_rows.extend(
@@ -323,6 +427,17 @@ def main():
                         "smoothed_calibrated",
                     )
                 )
+                method_roc_rows, method_pr_rows = curve_rows(
+                    model_name,
+                    model_family,
+                    model_id,
+                    "test",
+                    "smoothed_calibrated",
+                    calibrated_rows,
+                    "smoothed_calibrated",
+                )
+                roc_curve_rows.extend(method_roc_rows)
+                pr_curve_rows.extend(method_pr_rows)
                 calibrated_prediction_rows.extend(calibrated_rows)
                 notes.append(
                     f"Calibration for {model_name} used multinomial logistic regression over smoothed 3-class probabilities from split=dev."
@@ -351,12 +466,25 @@ def main():
             "accuracy",
             "balanced_accuracy",
             "macro_f1",
+            "auroc_ovr",
+            "auprc_macro",
+            "brier_macro",
         ],
     )
     write_csv_rows(
         output_dir / "confusion_matrices.csv",
         confusion_rows,
         ["model_name", "model_family", "hf_model_id", "scope", "method", "gold_label"] + LABEL_ORDER,
+    )
+    write_csv_rows(
+        output_dir / "roc_curves.csv",
+        roc_curve_rows,
+        ["model_name", "model_family", "hf_model_id", "scope", "method", "label", "x", "y"],
+    )
+    write_csv_rows(
+        output_dir / "pr_curves.csv",
+        pr_curve_rows,
+        ["model_name", "model_family", "hf_model_id", "scope", "method", "label", "x", "y"],
     )
     write_csv_rows(
         output_dir / "per_class_metrics.csv",

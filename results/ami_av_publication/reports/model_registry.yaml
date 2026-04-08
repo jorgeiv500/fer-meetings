@@ -1,0 +1,9 @@
+models:
+  - name: convnext_tiny_emotion
+    hf_model_id: firedfrog/convnext-tiny-224-emotion-prediction
+    family: cnn
+    face_detector: haar
+  - name: vit_face_expression
+    hf_model_id: mo-thecreator/vit-Facial-Expression-Recognition
+    family: vit
+    face_detector: haar

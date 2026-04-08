@@ -170,6 +170,26 @@ def write_summary(output_dir, metrics_rows, notes):
     summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def history_rows(model_key, history):
+    model_name, model_family, model_id = model_key
+    rows = []
+    for entry in history:
+        rows.append(
+            {
+                "model_name": model_name,
+                "model_family": model_family,
+                "hf_model_id": model_id,
+                "method": "attention_pooling",
+                "epoch": entry["epoch"],
+                "train_loss": entry["train_loss"],
+                "train_accuracy": entry["train_accuracy"],
+                "val_macro_f1": entry["val_macro_f1"],
+                "val_accuracy": entry["val_accuracy"],
+            }
+        )
+    return rows
+
+
 def main():
     args = parse_args()
     features = read_csv_rows(args.clip_features)
@@ -186,6 +206,7 @@ def main():
     prediction_rows = []
     per_class_rows = []
     confusion_matrix_rows = []
+    training_history_rows = []
     notes = []
 
     for model_key, model_rows in group_rows_by_model(merged_rows).items():
@@ -203,7 +224,7 @@ def main():
             continue
 
         logistic_model = fit_logistic_probe(train_rows)
-        logistic_predictions = predict_probe(logistic_model, test_rows)
+        logistic_predictions, logistic_probabilities = predict_probe(logistic_model, test_rows, return_probabilities=True)
         logistic_metrics = metric_bundle(labels_to_indices(test_rows), logistic_predictions)
         metrics_rows.append(
             {
@@ -214,12 +235,20 @@ def main():
                 **logistic_metrics,
             }
         )
-        prediction_rows.extend(build_prediction_rows(model_key, test_rows, "mean_embedding_logreg", logistic_predictions))
+        prediction_rows.extend(
+            build_prediction_rows(
+                model_key,
+                test_rows,
+                "mean_embedding_logreg",
+                logistic_predictions,
+                probabilities=logistic_probabilities,
+            )
+        )
         per_class_rows.extend(per_class_metric_rows(model_key, "mean_embedding_logreg", test_rows, logistic_predictions))
         confusion_matrix_rows.extend(confusion_rows(model_key, "mean_embedding_logreg", test_rows, logistic_predictions))
 
         hist_model = fit_hist_gradient_probe(train_rows)
-        hist_predictions = predict_probe(hist_model, test_rows)
+        hist_predictions, hist_probabilities = predict_probe(hist_model, test_rows, return_probabilities=True)
         hist_metrics = metric_bundle(labels_to_indices(test_rows), hist_predictions)
         metrics_rows.append(
             {
@@ -230,12 +259,20 @@ def main():
                 **hist_metrics,
             }
         )
-        prediction_rows.extend(build_prediction_rows(model_key, test_rows, "mean_embedding_hgb", hist_predictions))
+        prediction_rows.extend(
+            build_prediction_rows(
+                model_key,
+                test_rows,
+                "mean_embedding_hgb",
+                hist_predictions,
+                probabilities=hist_probabilities,
+            )
+        )
         per_class_rows.extend(per_class_metric_rows(model_key, "mean_embedding_hgb", test_rows, hist_predictions))
         confusion_matrix_rows.extend(confusion_rows(model_key, "mean_embedding_hgb", test_rows, hist_predictions))
 
         try:
-            attention_model = fit_attention_pooler(train_rows, device=device)
+            attention_model, attention_history = fit_attention_pooler(train_rows, device=device)
             attention_predictions, attention_probabilities, attention_weights = predict_attention_pooler(
                 attention_model,
                 test_rows,
@@ -263,6 +300,7 @@ def main():
             )
             per_class_rows.extend(per_class_metric_rows(model_key, "attention_pooling", test_rows, attention_predictions))
             confusion_matrix_rows.extend(confusion_rows(model_key, "attention_pooling", test_rows, attention_predictions))
+            training_history_rows.extend(history_rows(model_key, attention_history))
         except ValueError as error:
             notes.append(f"Attention pooling skipped for {model_name}: {error}")
 
@@ -303,6 +341,21 @@ def main():
         output_dir / "clip_model_confusion_matrices.csv",
         confusion_matrix_rows,
         ["model_name", "model_family", "hf_model_id", "method", "gold_label"] + LABEL_ORDER,
+    )
+    write_csv_rows(
+        output_dir / "attention_pooling_history.csv",
+        training_history_rows,
+        [
+            "model_name",
+            "model_family",
+            "hf_model_id",
+            "method",
+            "epoch",
+            "train_loss",
+            "train_accuracy",
+            "val_macro_f1",
+            "val_accuracy",
+        ],
     )
 
     fieldnames = [

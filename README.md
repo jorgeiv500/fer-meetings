@@ -22,8 +22,8 @@ Eso permite responder si la mejora viene de la arquitectura, del pooling tempora
 
 - Config: [configs/ami_av_cnn_vit_publication.json](configs/ami_av_cnn_vit_publication.json)
 - Manifest final: [data/interim/ami_av_manifest_publication.csv](data/interim/ami_av_manifest_publication.csv)
-- Corrida final: [results/ami_av_publication](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication)
-- Assets finales: [results/latest_paper_assets](/Users/jorgeiv500/Documents/fer-meetings/results/latest_paper_assets)
+- Corrida final: [results/ami_av_publication](results/ami_av_publication)
+- Assets finales: [results/ami_av_publication/paper_assets](results/ami_av_publication/paper_assets)
 
 ## Flujo recomendado
 
@@ -66,7 +66,7 @@ Eso deja:
 
 Abre:
 
-- [results/ami_av_publication/annotation_pack/index.html](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/annotation_pack/index.html)
+- [results/ami_av_publication/annotation_pack/index.html](results/ami_av_publication/annotation_pack/index.html)
 
 La interfaz permite:
 
@@ -76,7 +76,7 @@ La interfaz permite:
 
 Después de exportar, reemplaza el archivo del proyecto:
 
-- [results/ami_av_publication/annotation_pack/annotation_sheet.csv](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/annotation_pack/annotation_sheet.csv)
+- [results/ami_av_publication/annotation_pack/annotation_sheet.csv](results/ami_av_publication/annotation_pack/annotation_sheet.csv)
 
 ### 4. Corrida postlabels
 
@@ -97,24 +97,24 @@ Eso ejecuta:
 
 Tablas principales:
 
-- [main_model_comparison.csv](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/tables/main_model_comparison.csv)
-- [clip_model_comparison.csv](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/tables/clip_model_comparison.csv)
-- [dataset_summary.csv](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/tables/dataset_summary.csv)
-- [label_distribution.csv](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/tables/label_distribution.csv)
+- [main_model_comparison.csv](results/ami_av_publication/paper_assets/tables/main_model_comparison.csv)
+- [clip_model_comparison.csv](results/ami_av_publication/paper_assets/tables/clip_model_comparison.csv)
+- [dataset_summary.csv](results/ami_av_publication/paper_assets/tables/dataset_summary.csv)
+- [label_distribution.csv](results/ami_av_publication/paper_assets/tables/label_distribution.csv)
 
 Figuras principales:
 
-- [main_test_macro_f1.png](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/figures/main_test_macro_f1.png)
-- [main_test_balanced_accuracy.png](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/figures/main_test_balanced_accuracy.png)
-- [clip_models_macro_f1.png](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/figures/clip_models_macro_f1.png)
-- [label_distribution.png](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/paper_assets/figures/label_distribution.png)
+- [main_test_macro_f1.png](results/ami_av_publication/paper_assets/figures/main_test_macro_f1.png)
+- [main_test_balanced_accuracy.png](results/ami_av_publication/paper_assets/figures/main_test_balanced_accuracy.png)
+- [clip_models_macro_f1.png](results/ami_av_publication/paper_assets/figures/clip_models_macro_f1.png)
+- [label_distribution.png](results/ami_av_publication/paper_assets/figures/label_distribution.png)
 
 Reportes:
 
-- [experiment_card.md](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/reports/experiment_card.md)
-- [data_sheet.md](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/reports/data_sheet.md)
-- [limitations_and_ethics.md](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/reports/limitations_and_ethics.md)
-- [reproducibility_checklist.md](/Users/jorgeiv500/Documents/fer-meetings/results/ami_av_publication/reports/reproducibility_checklist.md)
+- [experiment_card.md](results/ami_av_publication/reports/experiment_card.md)
+- [data_sheet.md](results/ami_av_publication/reports/data_sheet.md)
+- [limitations_and_ethics.md](results/ami_av_publication/reports/limitations_and_ethics.md)
+- [reproducibility_checklist.md](results/ami_av_publication/reports/reproducibility_checklist.md)
 
 ## Interpretación metodológica
 

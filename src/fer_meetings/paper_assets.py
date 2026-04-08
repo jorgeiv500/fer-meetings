@@ -79,6 +79,9 @@ def build_main_comparison_table(metrics_rows):
                 "accuracy": format_metric(row["accuracy"]),
                 "balanced_accuracy": format_metric(row["balanced_accuracy"]),
                 "macro_f1": format_metric(row["macro_f1"]),
+                "auroc_ovr": format_metric(row["auroc_ovr"]) if row.get("auroc_ovr", "") != "" else "",
+                "auprc_macro": format_metric(row["auprc_macro"]) if row.get("auprc_macro", "") != "" else "",
+                "brier_macro": format_metric(row["brier_macro"]) if row.get("brier_macro", "") != "" else "",
             }
         )
     return rows
@@ -96,6 +99,41 @@ def build_clip_comparison_table(metrics_rows):
                 "accuracy": format_metric(row["accuracy"]),
                 "balanced_accuracy": format_metric(row["balanced_accuracy"]),
                 "macro_f1": format_metric(row["macro_f1"]),
+            }
+        )
+    return rows
+
+
+def curve_table_rows(curve_rows):
+    rows = []
+    for row in curve_rows:
+        rows.append(
+            {
+                "model": row["model_name"],
+                "family": row["model_family"],
+                "scope": row["scope"],
+                "method": row["method"],
+                "label": row["label"],
+                "x": format_metric(row["x"]),
+                "y": format_metric(row["y"]),
+            }
+        )
+    return rows
+
+
+def history_table_rows(history_rows):
+    rows = []
+    for row in history_rows:
+        rows.append(
+            {
+                "model": row["model_name"],
+                "family": row["model_family"],
+                "method": row["method"],
+                "epoch": row["epoch"],
+                "train_loss": format_metric(row["train_loss"]),
+                "train_accuracy": format_metric(row["train_accuracy"]),
+                "val_macro_f1": format_metric(row["val_macro_f1"]) if row.get("val_macro_f1", "") != "" else "",
+                "val_accuracy": format_metric(row["val_accuracy"]) if row.get("val_accuracy", "") != "" else "",
             }
         )
     return rows
@@ -249,7 +287,80 @@ def plot_confusion_heatmap(rows, output_path, title):
     plt.close()
 
 
-def maybe_generate_figures(main_rows, clip_rows, confusion_rows, output_dir, label_distribution_rows=None):
+def plot_curve_families(rows, output_path, title, x_label, y_label):
+    import matplotlib.pyplot as plt
+
+    if not rows:
+        return
+    plt.figure(figsize=(7.2, 5.0))
+    families = {"cnn": "#c0392b", "vit": "#1f5aa6"}
+    methods = {"single_frame": "-", "smoothed": "--", "smoothed_calibrated": ":", "attention_pooling": "-."}
+    grouped = defaultdict(list)
+    for row in rows:
+        key = (row["model_family"], row["model_name"], row["method"], row["label"])
+        grouped[key].append(row)
+    for key, series in grouped.items():
+        family, model_name, method, label = key
+        series = sorted(series, key=lambda item: float(item["x"]))
+        x_values = [float(item["x"]) for item in series]
+        y_values = [float(item["y"]) for item in series]
+        plt.plot(
+            x_values,
+            y_values,
+            label=f"{model_name} | {method} | {label}",
+            color=families.get(family, "#495057"),
+            linestyle=methods.get(method, "-"),
+            linewidth=1.6,
+            alpha=0.9,
+        )
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    plt.legend(fontsize=8, ncol=1, loc="best")
+    plt.tight_layout()
+    ensure_parent(output_path)
+    plt.savefig(output_path, dpi=180)
+    plt.close()
+
+
+def plot_attention_history(rows, output_path):
+    import matplotlib.pyplot as plt
+
+    if not rows:
+        return
+    grouped = defaultdict(list)
+    for row in rows:
+        grouped[row.get("model_name", row.get("model", "model"))].append(row)
+
+    figure, axes = plt.subplots(1, 2, figsize=(10, 4.2))
+    colors = {"cnn": "#c0392b", "vit": "#1f5aa6"}
+    for model_name, series in grouped.items():
+        series = sorted(series, key=lambda item: int(item["epoch"]))
+        family = series[0].get("model_family", series[0].get("family", "unknown"))
+        epochs = [int(item["epoch"]) for item in series]
+        train_loss = [float(item["train_loss"]) for item in series]
+        train_accuracy = [float(item["train_accuracy"]) for item in series]
+        val_accuracy = [float(item["val_accuracy"]) for item in series if item.get("val_accuracy", "") != ""]
+        val_epochs = [int(item["epoch"]) for item in series if item.get("val_accuracy", "") != ""]
+        axes[0].plot(epochs, train_loss, label=model_name, color=colors.get(family, "#495057"))
+        axes[1].plot(epochs, train_accuracy, label=f"{model_name} train", color=colors.get(family, "#495057"))
+        if val_accuracy:
+            axes[1].plot(val_epochs, val_accuracy, label=f"{model_name} val", color=colors.get(family, "#495057"), linestyle="--")
+    axes[0].set_title("Attention Pooling Training Loss")
+    axes[0].set_xlabel("Epoch")
+    axes[0].set_ylabel("Loss")
+    axes[1].set_title("Attention Pooling Accuracy")
+    axes[1].set_xlabel("Epoch")
+    axes[1].set_ylabel("Accuracy")
+    for axis in axes:
+        axis.legend(fontsize=8)
+    plt.tight_layout()
+    ensure_parent(output_path)
+    plt.savefig(output_path, dpi=180)
+    plt.close()
+
+
+def maybe_generate_figures(main_rows, clip_rows, confusion_rows, output_dir, label_distribution_rows=None, roc_rows=None, pr_rows=None, history_rows=None):
     try:
         import matplotlib  # noqa: F401
     except Exception:
@@ -275,6 +386,13 @@ def maybe_generate_figures(main_rows, clip_rows, confusion_rows, output_dir, lab
         metric_field="balanced_accuracy",
         scope_filter="test",
     )
+    plot_method_bars(
+        main_rows,
+        Path(output_dir) / "figures" / "main_test_accuracy.png",
+        "Accuracy on test clips",
+        metric_field="accuracy",
+        scope_filter="test",
+    )
 
     if clip_rows:
         plot_method_bars(
@@ -287,6 +405,28 @@ def maybe_generate_figures(main_rows, clip_rows, confusion_rows, output_dir, lab
         plot_label_distribution(
             label_distribution_rows,
             Path(output_dir) / "figures" / "label_distribution.png",
+        )
+
+    if roc_rows:
+        plot_curve_families(
+            [row for row in roc_rows if row["scope"] == "test" and row["method"] in {"single_frame", "smoothed", "smoothed_calibrated"}],
+            Path(output_dir) / "figures" / "main_test_roc_ovr.png",
+            "One-vs-rest ROC curves on test clips",
+            "False positive rate",
+            "True positive rate",
+        )
+    if pr_rows:
+        plot_curve_families(
+            [row for row in pr_rows if row["scope"] == "test" and row["method"] in {"single_frame", "smoothed", "smoothed_calibrated"}],
+            Path(output_dir) / "figures" / "main_test_pr_ovr.png",
+            "One-vs-rest Precision-Recall curves on test clips",
+            "Recall",
+            "Precision",
+        )
+    if history_rows:
+        plot_attention_history(
+            history_rows,
+            Path(output_dir) / "figures" / "attention_pooling_training.png",
         )
 
     tables = build_confusion_tables(confusion_rows)
@@ -315,12 +455,12 @@ def main():
     write_csv_rows(
         output_dir / "tables" / "main_model_comparison.csv",
         main_table,
-        ["model", "family", "scope", "method", "n_clips", "accuracy", "balanced_accuracy", "macro_f1"],
+        ["model", "family", "scope", "method", "n_clips", "accuracy", "balanced_accuracy", "macro_f1", "auroc_ovr", "auprc_macro", "brier_macro"],
     )
     write_markdown_table(
         output_dir / "tables" / "main_model_comparison.md",
         main_table,
-        ["model", "family", "scope", "method", "n_clips", "accuracy", "balanced_accuracy", "macro_f1"],
+        ["model", "family", "scope", "method", "n_clips", "accuracy", "balanced_accuracy", "macro_f1", "auroc_ovr", "auprc_macro", "brier_macro"],
     )
 
     per_class_path = pilot_dir / "per_class_metrics.csv"
@@ -339,8 +479,13 @@ def main():
 
     confusion_path = pilot_dir / "confusion_matrices.csv"
     confusion_rows = read_csv_rows(confusion_path) if confusion_path.exists() else []
+    roc_path = pilot_dir / "roc_curves.csv"
+    roc_rows = read_csv_rows(roc_path) if roc_path.exists() else []
+    pr_path = pilot_dir / "pr_curves.csv"
+    pr_rows = read_csv_rows(pr_path) if pr_path.exists() else []
 
     clip_table = []
+    history_rows = []
     if clip_model_dir:
         clip_metrics = load_clip_metrics(clip_model_dir)
         clip_table = build_clip_comparison_table(clip_metrics)
@@ -363,6 +508,19 @@ def main():
                 output_dir / "tables" / "clip_model_per_class_metrics.csv",
                 clip_per_class_rows,
                 ["model", "family", "method", "label", "precision", "recall", "f1", "support"],
+            )
+        history_path = clip_model_dir / "attention_pooling_history.csv"
+        if history_path.exists():
+            history_rows = history_table_rows(read_csv_rows(history_path))
+            write_csv_rows(
+                output_dir / "tables" / "attention_pooling_history.csv",
+                history_rows,
+                ["model", "family", "method", "epoch", "train_loss", "train_accuracy", "val_macro_f1", "val_accuracy"],
+            )
+            write_markdown_table(
+                output_dir / "tables" / "attention_pooling_history.md",
+                history_rows,
+                ["model", "family", "method", "epoch", "train_loss", "train_accuracy", "val_macro_f1", "val_accuracy"],
             )
             write_markdown_table(
                 output_dir / "tables" / "clip_model_per_class_metrics.md",
@@ -390,6 +548,21 @@ def main():
             label_distribution_rows,
             ["scope", "n_labeled", "negative", "neutral", "positive"],
         )
+
+    if roc_rows:
+        roc_table = curve_table_rows(roc_rows)
+        write_csv_rows(
+            output_dir / "tables" / "roc_curves.csv",
+            roc_table,
+            ["model", "family", "scope", "method", "label", "x", "y"],
+        )
+    if pr_rows:
+        pr_table = curve_table_rows(pr_rows)
+        write_csv_rows(
+            output_dir / "tables" / "pr_curves.csv",
+            pr_table,
+            ["model", "family", "scope", "method", "label", "x", "y"],
+        )
         write_markdown_table(
             output_dir / "tables" / "label_distribution.md",
             label_distribution_rows,
@@ -404,19 +577,27 @@ def main():
                 "Generated paper assets:",
                 "- tables/main_model_comparison.csv",
                 "- tables/main_model_comparison.md",
+                "- tables/roc_curves.csv (if probability curves exist)",
+                "- tables/pr_curves.csv (if probability curves exist)",
                 "- tables/main_per_class_metrics.csv (if per-class metrics exist)",
                 "- tables/main_per_class_metrics.md (if per-class metrics exist)",
                 "- tables/clip_model_comparison.csv (if clip-model metrics exist)",
                 "- tables/clip_model_comparison.md (if clip-model metrics exist)",
                 "- tables/clip_model_per_class_metrics.csv (if clip-model per-class metrics exist)",
                 "- tables/clip_model_per_class_metrics.md (if clip-model per-class metrics exist)",
+                "- tables/attention_pooling_history.csv (if attention pooling history exists)",
+                "- tables/attention_pooling_history.md (if attention pooling history exists)",
                 "- tables/dataset_summary.csv (if manifest is provided)",
                 "- tables/dataset_summary.md (if manifest is provided)",
                 "- tables/label_distribution.csv (if labels are provided)",
                 "- tables/label_distribution.md (if labels are provided)",
                 "- figures/main_test_macro_f1.png",
+                "- figures/main_test_accuracy.png",
                 "- figures/main_test_balanced_accuracy.png",
+                "- figures/main_test_roc_ovr.png (if probability curves exist)",
+                "- figures/main_test_pr_ovr.png (if probability curves exist)",
                 "- figures/clip_models_macro_f1.png (if clip-model metrics exist)",
+                "- figures/attention_pooling_training.png (if training history exists)",
                 "- figures/label_distribution.png (if labels are provided)",
                 "- figures/confusion_*.png",
             ]
@@ -425,7 +606,7 @@ def main():
         encoding="utf-8",
     )
 
-    maybe_generate_figures(main_metrics, clip_table, confusion_rows, output_dir, label_distribution_rows)
+    maybe_generate_figures(main_metrics, clip_table, confusion_rows, output_dir, label_distribution_rows, roc_rows, pr_rows, history_rows)
     print(f"Wrote paper assets under {output_dir}")
 
 

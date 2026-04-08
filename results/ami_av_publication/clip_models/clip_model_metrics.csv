@@ -1,0 +1,7 @@
+model_name,model_family,hf_model_id,method,n_clips,accuracy,balanced_accuracy,macro_f1
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,50,0.66,0.6805555555555555,0.6180623973727423
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_hgb,50,0.44,0.4138888888888888,0.3622098725073553
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg,50,0.48,0.5,0.43311389071757733
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,50,0.64,0.6527777777777778,0.5971607280905193
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,50,0.54,0.5472222222222223,0.46156462585034014
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,50,0.62,0.6722222222222222,0.5920479302832244

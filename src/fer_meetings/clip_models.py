@@ -63,8 +63,15 @@ def fit_hist_gradient_probe(train_rows):
     return model
 
 
-def predict_probe(model, rows):
-    return model.predict(mean_embedding_matrix(rows))
+def predict_probe(model, rows, return_probabilities=False):
+    features = mean_embedding_matrix(rows)
+    predictions = model.predict(features)
+    if not return_probabilities:
+        return predictions
+    probabilities = None
+    if hasattr(model, "predict_proba"):
+        probabilities = model.predict_proba(features)
+    return predictions, probabilities
 
 
 def pad_sequences(sequences):
@@ -144,6 +151,7 @@ def fit_attention_pooler(train_rows, seed=42, device="cpu"):
     best_score = -1.0
     patience = 25
     remaining_patience = patience
+    history = []
 
     if validation_rows:
         val_inputs, val_mask = pad_sequences(sequence_matrices(validation_rows))
@@ -154,7 +162,7 @@ def fit_attention_pooler(train_rows, seed=42, device="cpu"):
         val_inputs = val_mask = None
         val_targets = None
 
-    for _ in range(200):
+    for epoch_index in range(200):
         model.train()
         optimizer.zero_grad()
         logits, _ = model(train_inputs, train_mask)
@@ -162,14 +170,29 @@ def fit_attention_pooler(train_rows, seed=42, device="cpu"):
         loss.backward()
         optimizer.step()
 
+        train_predictions = logits.argmax(dim=-1).detach().cpu().numpy()
+        train_accuracy = accuracy_score(train_targets.detach().cpu().numpy(), train_predictions)
+
         if validation_rows:
             model.eval()
             with torch.no_grad():
                 val_logits, _ = model(val_inputs, val_mask)
             predicted = val_logits.argmax(dim=-1).cpu().numpy()
             score = f1_score(val_targets, predicted, average="macro", zero_division=0)
+            val_accuracy = accuracy_score(val_targets, predicted)
         else:
             score = float(-loss.detach().cpu().item())
+            val_accuracy = ""
+
+        history.append(
+            {
+                "epoch": epoch_index + 1,
+                "train_loss": float(loss.detach().cpu().item()),
+                "train_accuracy": float(train_accuracy),
+                "val_macro_f1": float(score) if validation_rows else "",
+                "val_accuracy": float(val_accuracy) if validation_rows else "",
+            }
+        )
 
         if score > best_score:
             best_score = score
@@ -181,7 +204,7 @@ def fit_attention_pooler(train_rows, seed=42, device="cpu"):
                 break
 
     model.load_state_dict(best_state)
-    return model
+    return model, history
 
 
 def predict_attention_pooler(model, rows, device="cpu"):

@@ -1,19 +1,43 @@
 model_name,model_family,hf_model_id,method,label,precision,recall,f1,support
-convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,negative,0.3333333333333333,0.875,0.4827586206896552,8
-convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,neutral,1.0,0.6666666666666666,0.8,30
-convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,positive,0.6666666666666666,0.5,0.5714285714285714,12
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,negative,0.3157894736842105,0.75,0.4444444444444444,8
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,neutral,0.9130434782608695,0.7,0.7924528301886793,30
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,positive,0.75,0.5,0.6,12
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,negative,0.2222222222222222,0.75,0.34285714285714286,8
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,neutral,0.9411764705882353,0.5333333333333333,0.6808510638297872,30
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,positive,0.6666666666666666,0.3333333333333333,0.4444444444444444,12
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,negative,0.32,1.0,0.48484848484848486,8
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,neutral,1.0,0.6666666666666666,0.8,30
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,positive,1.0,0.4166666666666667,0.5882352941176471,12
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,negative,0.2857142857142857,0.75,0.41379310344827586,8
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,neutral,0.9130434782608695,0.7,0.7924528301886793,30
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,positive,0.8333333333333334,0.4166666666666667,0.5555555555555556,12
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,negative,0.2857142857142857,0.75,0.41379310344827586,8
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,neutral,0.95,0.6333333333333333,0.76,30
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,positive,0.4444444444444444,0.3333333333333333,0.38095238095238093,12
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_hgb,negative,0.18518518518518517,0.625,0.2857142857142857,8
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_hgb,neutral,1.0,0.5333333333333333,0.6956521739130435,30
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_hgb,positive,0.14285714285714285,0.08333333333333333,0.10526315789473684,12
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg,negative,0.2608695652173913,0.75,0.3870967741935484,8
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg,neutral,0.7894736842105263,0.5,0.6122448979591837,30
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg,positive,0.375,0.25,0.3,12
-vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,negative,0.30434782608695654,0.875,0.45161290322580644,8
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg_coral,negative,0.2222222222222222,0.5,0.3076923076923077,8
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg_coral,neutral,0.7142857142857143,0.5,0.5882352941176471,30
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg_coral,positive,0.2727272727272727,0.25,0.2608695652173913,12
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_mmd_adapter,negative,0.3181818181818182,0.875,0.4666666666666667,8
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_mmd_adapter,neutral,0.8695652173913043,0.6666666666666666,0.7547169811320755,30
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_mmd_adapter,positive,0.6,0.25,0.35294117647058826,12
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,negative,0.2916666666666667,0.875,0.4375,8
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,neutral,0.9523809523809523,0.6666666666666666,0.7843137254901961,30
-vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,positive,0.8333333333333334,0.4166666666666667,0.5555555555555556,12
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,positive,1.0,0.4166666666666667,0.5882352941176471,12
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,negative,0.25925925925925924,0.875,0.4,8
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,neutral,0.9473684210526315,0.6,0.7346938775510204,30
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,positive,0.5,0.16666666666666666,0.25,12
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,negative,0.3076923076923077,1.0,0.47058823529411764,8
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,neutral,1.0,0.6,0.75,30
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,positive,0.8333333333333334,0.4166666666666667,0.5555555555555556,12
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg_coral,negative,0.14285714285714285,0.375,0.20689655172413793,8
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg_coral,neutral,0.7222222222222222,0.43333333333333335,0.5416666666666666,30
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg_coral,positive,0.36363636363636365,0.3333333333333333,0.34782608695652173,12
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,negative,0.09090909090909091,0.125,0.10526315789473684,8
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,neutral,0.7575757575757576,0.8333333333333334,0.7936507936507936,30
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,positive,0.6666666666666666,0.3333333333333333,0.4444444444444444,12

@@ -1,13 +1,53 @@
 [
   {
+    "model_name": "cnn_vit_fusion",
+    "model_family": "hybrid",
+    "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition",
+    "method": "attention_pooling",
+    "n_clips": 50,
+    "accuracy": 0.66,
+    "balanced_accuracy": 0.65,
+    "macro_f1": 0.6122990915443746
+  },
+  {
+    "model_name": "cnn_vit_fusion",
+    "model_family": "hybrid",
+    "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition",
+    "method": "mean_embedding_hgb",
+    "n_clips": 50,
+    "accuracy": 0.52,
+    "balanced_accuracy": 0.5388888888888889,
+    "macro_f1": 0.4893842170437915
+  },
+  {
+    "model_name": "cnn_vit_fusion",
+    "model_family": "hybrid",
+    "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition",
+    "method": "mean_embedding_logreg",
+    "n_clips": 50,
+    "accuracy": 0.66,
+    "balanced_accuracy": 0.6944444444444443,
+    "macro_f1": 0.6243612596553773
+  },
+  {
+    "model_name": "cnn_vit_fusion",
+    "model_family": "hybrid",
+    "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition",
+    "method": "mean_embedding_mmd_adapter",
+    "n_clips": 50,
+    "accuracy": 0.64,
+    "balanced_accuracy": 0.6222222222222222,
+    "macro_f1": 0.5872671630641703
+  },
+  {
     "model_name": "convnext_tiny_emotion",
     "model_family": "cnn",
     "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction",
     "method": "attention_pooling",
     "n_clips": 50,
-    "accuracy": 0.66,
-    "balanced_accuracy": 0.6805555555555555,
-    "macro_f1": 0.6180623973727423
+    "accuracy": 0.58,
+    "balanced_accuracy": 0.5722222222222222,
+    "macro_f1": 0.518248494800219
   },
   {
     "model_name": "convnext_tiny_emotion",
@@ -30,6 +70,26 @@
     "macro_f1": 0.43311389071757733
   },
   {
+    "model_name": "convnext_tiny_emotion",
+    "model_family": "cnn",
+    "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction",
+    "method": "mean_embedding_logreg_coral",
+    "n_clips": 50,
+    "accuracy": 0.44,
+    "balanced_accuracy": 0.4166666666666667,
+    "macro_f1": 0.385599055675782
+  },
+  {
+    "model_name": "convnext_tiny_emotion",
+    "model_family": "cnn",
+    "hf_model_id": "firedfrog/convnext-tiny-224-emotion-prediction",
+    "method": "mean_embedding_mmd_adapter",
+    "n_clips": 50,
+    "accuracy": 0.6,
+    "balanced_accuracy": 0.5972222222222222,
+    "macro_f1": 0.5247749414231101
+  },
+  {
     "model_name": "vit_face_expression",
     "model_family": "vit",
     "hf_model_id": "mo-thecreator/vit-Facial-Expression-Recognition",
@@ -37,7 +97,7 @@
     "n_clips": 50,
     "accuracy": 0.64,
     "balanced_accuracy": 0.6527777777777778,
-    "macro_f1": 0.5971607280905193
+    "macro_f1": 0.6033496732026143
   },
   {
     "model_name": "vit_face_expression",
@@ -58,5 +118,25 @@
     "accuracy": 0.62,
     "balanced_accuracy": 0.6722222222222222,
     "macro_f1": 0.5920479302832244
+  },
+  {
+    "model_name": "vit_face_expression",
+    "model_family": "vit",
+    "hf_model_id": "mo-thecreator/vit-Facial-Expression-Recognition",
+    "method": "mean_embedding_logreg_coral",
+    "n_clips": 50,
+    "accuracy": 0.4,
+    "balanced_accuracy": 0.38055555555555554,
+    "macro_f1": 0.3654631017824421
+  },
+  {
+    "model_name": "vit_face_expression",
+    "model_family": "vit",
+    "hf_model_id": "mo-thecreator/vit-Facial-Expression-Recognition",
+    "method": "mean_embedding_mmd_adapter",
+    "n_clips": 50,
+    "accuracy": 0.6,
+    "balanced_accuracy": 0.4305555555555556,
+    "macro_f1": 0.4477861319966583
   }
 ]

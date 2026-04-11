@@ -315,6 +315,32 @@ def render_html(rows, output_dir, output_path):
       letter-spacing: 0.04em;
       margin-bottom: 8px;
     }
+    .review-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .review-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.75);
+      padding: 8px;
+    }
+    .review-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .review-card .current-label { margin-bottom: 0; }
+    .review-status {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
     .label-empty { background: #f2ece2; color: var(--muted); }
     .label-negative { background: rgba(179, 56, 44, 0.12); color: var(--neg); }
     .label-neutral { background: rgba(108, 114, 120, 0.14); color: var(--neu); }
@@ -429,8 +455,9 @@ def render_html(rows, output_dir, output_path):
   </table>
   <script>
     const FIELDNAMES = __FIELDNAMES_JSON__;
-    const STORAGE_KEY = "fer_meetings_annotation_pack_v2";
+    const STORAGE_KEY = "fer_meetings_annotation_pack_v3";
     const LABELS = ["negative", "neutral", "positive"];
+    const DRAFT_FIELDS = ["gold_label", "annotator", "notes", "exclude_from_gold"];
     const annotationRows = __ROWS_JSON__;
     const draftState = new Map();
     const elements = {
@@ -466,6 +493,10 @@ def render_html(rows, output_dir, output_path):
       return label || "unlabeled";
     }
 
+    function reviewBadge(label) {
+      return `<span class="current-label ${labelClass(label)}">${labelText(label)}</span>`;
+    }
+
     function normalizeBool(value) {
       return String(value || "").toLowerCase() === "true";
     }
@@ -476,16 +507,24 @@ def render_html(rows, output_dir, output_path):
         .toLowerCase();
     }
 
+    function draftPatch(row) {
+      const patch = { clip_id: row.clip_id };
+      DRAFT_FIELDS.forEach((field) => {
+        patch[field] = row[field] ?? "";
+      });
+      return patch;
+    }
+
     function currentRows() {
-      return annotationRows.map((row) => draftState.get(row.clip_id) || row);
+      return annotationRows.map((row) => ({ ...row, ...(draftState.get(row.clip_id) || {}) }));
     }
 
     function serializeDrafts() {
       const changedRows = currentRows().filter((row, index) => {
         const base = annotationRows[index];
-        return JSON.stringify(row) !== JSON.stringify(base);
+        return DRAFT_FIELDS.some((field) => (row[field] ?? "") !== (base[field] ?? ""));
       });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(changedRows));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(changedRows.map(draftPatch)));
     }
 
     function restoreDrafts() {
@@ -495,7 +534,7 @@ def render_html(rows, output_dir, output_path):
         const parsed = JSON.parse(raw);
         parsed.forEach((row) => {
           if (row && row.clip_id) {
-            draftState.set(row.clip_id, row);
+            draftState.set(row.clip_id, draftPatch(row));
           }
         });
       } catch (error) {
@@ -560,8 +599,9 @@ def render_html(rows, output_dir, output_path):
     function updateRow(clipId, updates) {
       const base = annotationRows.find((row) => row.clip_id === clipId);
       if (!base) return;
-      const next = { ...(draftState.get(clipId) || base), ...updates };
-      draftState.set(clipId, next);
+      const current = { ...base, ...(draftState.get(clipId) || {}) };
+      const next = { ...current, ...updates };
+      draftState.set(clipId, draftPatch(next));
       serializeDrafts();
       renderRows();
     }
@@ -575,7 +615,7 @@ def render_html(rows, output_dir, output_path):
 
     function isDirty(row) {
       const base = annotationRows.find((item) => item.clip_id === row.clip_id);
-      return JSON.stringify(row) !== JSON.stringify(base);
+      return DRAFT_FIELDS.some((field) => (row[field] ?? "") !== (base[field] ?? ""));
     }
 
     function filteredRows(rows) {
@@ -631,6 +671,24 @@ def render_html(rows, output_dir, output_path):
             <td class="control-cell">
               <div class="current-label ${labelClass(row.gold_label)}">${labelText(row.gold_label)}</div>
               <div class="segmented">${buttonGroup}</div>
+              <div class="review-grid">
+                <div class="review-card">
+                  <div class="review-card-title">humano 1</div>
+                  ${reviewBadge(row.rater_1_label)}
+                </div>
+                <div class="review-card">
+                  <div class="review-card-title">humano 2</div>
+                  ${reviewBadge(row.rater_2_label)}
+                </div>
+                <div class="review-card">
+                  <div class="review-card-title">adjudicado</div>
+                  ${reviewBadge(row.adjudicated_label)}
+                </div>
+                <div class="review-card">
+                  <div class="review-card-title">acuerdo</div>
+                  <div class="review-status">${escapeHtml(row.agreement_status || "pending")}</div>
+                </div>
+              </div>
               <div class="field-row">
                 <label>
                   <input

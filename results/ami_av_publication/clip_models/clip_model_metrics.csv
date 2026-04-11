@@ -1,7 +1,15 @@
 model_name,model_family,hf_model_id,method,n_clips,accuracy,balanced_accuracy,macro_f1
-convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,50,0.66,0.6805555555555555,0.6180623973727423
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,50,0.66,0.65,0.6122990915443746
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,50,0.52,0.5388888888888889,0.4893842170437915
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,50,0.66,0.6944444444444443,0.6243612596553773
+cnn_vit_fusion,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,50,0.64,0.6222222222222222,0.5872671630641703
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,attention_pooling,50,0.58,0.5722222222222222,0.518248494800219
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_hgb,50,0.44,0.4138888888888888,0.3622098725073553
 convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg,50,0.48,0.5,0.43311389071757733
-vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,50,0.64,0.6527777777777778,0.5971607280905193
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_logreg_coral,50,0.44,0.4166666666666667,0.385599055675782
+convnext_tiny_emotion,cnn,firedfrog/convnext-tiny-224-emotion-prediction,mean_embedding_mmd_adapter,50,0.6,0.5972222222222222,0.5247749414231101
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,attention_pooling,50,0.64,0.6527777777777778,0.6033496732026143
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_hgb,50,0.54,0.5472222222222223,0.46156462585034014
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg,50,0.62,0.6722222222222222,0.5920479302832244
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_logreg_coral,50,0.4,0.38055555555555554,0.3654631017824421
+vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,mean_embedding_mmd_adapter,50,0.6,0.4305555555555556,0.4477861319966583

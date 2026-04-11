@@ -54,7 +54,11 @@ def load_metrics(path):
     return read_csv_rows(path)
 
 
-def build_experiment_card(config, model_specs, manifest_rows, label_rows, metrics_rows, clip_metrics_rows):
+def metric_lookup(rows):
+    return {row.get("metric", ""): row.get("value", "") for row in rows}
+
+
+def build_experiment_card(config, model_specs, manifest_rows, label_rows, metrics_rows, clip_metrics_rows, interrater_rows):
     label_counts = Counter(row["gold_label"] for row in label_rows)
     lines = [
         "# Experiment Card",
@@ -71,7 +75,22 @@ def build_experiment_card(config, model_specs, manifest_rows, label_rows, metric
         "- Cross-domain transfer from FER2013-style backbones to AMI meeting video.",
         "- Comparison between CNN and Vision Transformer representations.",
         "- Temporal aggregation and clip-level adaptation under weak supervision.",
+        "- Hybrid CNN+ViT fusion through probability ensembles and clip-level representation fusion.",
     ]
+
+    if interrater_rows:
+        lookup = metric_lookup(interrater_rows)
+        if lookup.get("double_rated_clips"):
+            lines.extend(
+                [
+                    "",
+                    "## Human Agreement",
+                    "",
+                    f"- Double-rated clips: `{int(float(lookup.get('double_rated_clips', 0) or 0))}`",
+                    f"- Observed agreement: `{float(lookup.get('observed_agreement', 0.0) or 0.0):.4f}`",
+                    f"- Cohen's kappa: `{float(lookup.get('cohen_kappa', 0.0) or 0.0):.4f}`",
+                ]
+            )
 
     test_metrics = [row for row in metrics_rows if row.get("scope") == "test"]
     candidate_main = test_metrics or metrics_rows
@@ -101,6 +120,19 @@ def build_experiment_card(config, model_specs, manifest_rows, label_rows, metric
                 f"- Macro-F1: `{float(best_clip.get('macro_f1', 0.0)):.4f}`",
             ]
         )
+
+    lines.extend(
+        [
+            "",
+            "## Core Paper Assets",
+            "",
+            "- Main ranking figure: `paper_assets/figures/main_test_macro_f1.png`",
+            "- Compact scorecard: `paper_assets/figures/main_test_scorecard.png`",
+            "- Clip-level ranking: `paper_assets/figures/clip_models_macro_f1.png`",
+            "- Human agreement overview: `paper_assets/figures/interrater_overview.png`",
+            "- Selected confusion panel: `paper_assets/figures/selected_confusions.png`",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -134,7 +166,7 @@ def build_limitations_and_ethics():
         "- The study infers observable facial valence, not internal emotion or intent.",
         "- AMI is a research corpus and should not be framed as a deployment-ready surveillance setting.",
         "- Domain shift remains severe because meeting video contains pose changes, occlusion, subtle affect and conversational context that are weakly captured by frame-only FER backbones.",
-        "- Single-rater labels are acceptable for a pilot but are not a strong gold standard; a publication-grade version should add second-rater annotation and adjudication.",
+        "- The current pilot already includes a second human rater, but disagreements have not yet been fully adjudicated into a publication-grade consensus set.",
         "- Results should be interpreted as evidence about transfer robustness and representation choice, not as claims of universal affect recognition performance.",
     ]
     return "\n".join(lines) + "\n"
@@ -171,10 +203,11 @@ def main():
     label_rows = labeled_rows(read_csv_rows(args.labels))
     metrics_rows = load_metrics(Path(args.pilot_dir) / "metrics.json")
     clip_metrics_rows = load_metrics(Path(args.clip_model_dir) / "clip_model_metrics.json") if args.clip_model_dir else []
+    interrater_rows = load_metrics(Path(args.pilot_dir) / "interrater_agreement.csv")
 
     (output_dir / "model_registry.yaml").write_text(dump_yaml_models(model_specs), encoding="utf-8")
     (output_dir / "experiment_card.md").write_text(
-        build_experiment_card(config, model_specs, manifest_rows, label_rows, metrics_rows, clip_metrics_rows),
+        build_experiment_card(config, model_specs, manifest_rows, label_rows, metrics_rows, clip_metrics_rows, interrater_rows),
         encoding="utf-8",
     )
     (output_dir / "data_sheet.md").write_text(build_data_sheet(manifest_rows, label_rows), encoding="utf-8")

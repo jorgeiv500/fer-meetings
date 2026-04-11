@@ -2,6 +2,18 @@
 
 | model | family | scope | method | n_clips | accuracy | balanced_accuracy | macro_f1 |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| cnn_vit_entropy_ensemble | hybrid | all | single_frame | 100 | 0.5600 | 0.4996 | 0.4170 |
+| cnn_vit_entropy_ensemble | hybrid | all | smoothed | 100 | 0.6300 | 0.5686 | 0.4712 |
+| cnn_vit_entropy_ensemble | hybrid | dev | single_frame | 50 | 0.5800 | 0.4871 | 0.4291 |
+| cnn_vit_entropy_ensemble | hybrid | dev | smoothed | 50 | 0.7000 | 0.5873 | 0.5200 |
+| cnn_vit_entropy_ensemble | hybrid | test | single_frame | 50 | 0.5400 | 0.5139 | 0.3860 |
+| cnn_vit_entropy_ensemble | hybrid | test | smoothed | 50 | 0.5600 | 0.5556 | 0.4070 |
+| cnn_vit_mean_ensemble | hybrid | all | single_frame | 100 | 0.5600 | 0.5054 | 0.4183 |
+| cnn_vit_mean_ensemble | hybrid | all | smoothed | 100 | 0.6400 | 0.5752 | 0.4774 |
+| cnn_vit_mean_ensemble | hybrid | dev | single_frame | 50 | 0.5800 | 0.4887 | 0.4274 |
+| cnn_vit_mean_ensemble | hybrid | dev | smoothed | 50 | 0.7200 | 0.6032 | 0.5337 |
+| cnn_vit_mean_ensemble | hybrid | test | single_frame | 50 | 0.5400 | 0.5139 | 0.3860 |
+| cnn_vit_mean_ensemble | hybrid | test | smoothed | 50 | 0.5600 | 0.5556 | 0.4070 |
 | convnext_tiny_emotion | cnn | all | single_frame | 100 | 0.3400 | 0.3791 | 0.2305 |
 | convnext_tiny_emotion | cnn | all | smoothed | 100 | 0.3100 | 0.3595 | 0.1948 |
 | convnext_tiny_emotion | cnn | all | vote | 100 | 0.3200 | 0.3660 | 0.2072 |
@@ -27,3 +39,4 @@
 
 - Calibration for convnext_tiny_emotion used multinomial logistic regression over smoothed 3-class probabilities from split=dev.
 - Calibration for vit_face_expression used multinomial logistic regression over smoothed 3-class probabilities from split=dev.
+- Hybrid CNN+ViT ensemble rows were added with mean-probability fusion and entropy-weighted fusion over paired clip probabilities.

@@ -1,0 +1,6 @@
+metric,value,notes
+double_rated_clips,100,Clips with two independent human ratings.
+agree,77,Exact matches between human 1 and human 2.
+disagree,23,Clips that still require adjudication if a single final label is needed.
+observed_agreement,0.7700,Fraction of exact matches across the 100 double-rated clips.
+cohen_kappa,0.6175,Chance-corrected agreement across the three valence classes.

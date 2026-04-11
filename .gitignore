@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 build/
 *.egg-info/
+humano
 
 data/raw/*
 data/interim/*
@@ -22,3 +23,16 @@ extracted/
 !data/interim/ami_av_manifest_publication.csv
 !results/ami_av_publication/
 !results/ami_av_publication/**
+
+# Bulky generated outputs stay local and are regenerated from the canonical config.
+results/ami_av_publication/*.zip
+results/ami_av_publication/frame_details.csv
+results/ami_av_publication/clip_features.csv
+results/ami_av_publication/predictions.csv
+results/ami_av_publication/labeled_predictions.csv
+results/ami_av_publication/calibrated_test_predictions.csv
+results/ami_av_publication/pr_curves.csv
+results/ami_av_publication/roc_curves.csv
+results/ami_av_publication/paper_writing_bundle/
+results/ami_av_publication/clip_models/attention_pooling_history.csv
+results/ami_av_publication/clip_models/clip_model_predictions.csv

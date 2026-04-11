@@ -7,15 +7,19 @@ import torch
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 
 from fer_meetings.clip_models import (
+    fit_coral_logistic_probe,
     fit_attention_pooler,
     fit_hist_gradient_probe,
     fit_logistic_probe,
+    fit_mmd_adapter_probe,
     labels_to_indices,
     metric_bundle,
     predict_attention_pooler,
+    predict_mmd_adapter,
     predict_probe,
 )
 from fer_meetings.constants import LABEL_ORDER
+from fer_meetings.fusion import concatenate_clip_feature_rows
 from fer_meetings.labels import resolve_gold_label
 from fer_meetings.utils import read_csv_rows, write_csv_rows
 
@@ -70,6 +74,29 @@ def group_rows_by_model(rows):
         )
         grouped.setdefault(key, []).append(row)
     return grouped
+
+
+def build_hybrid_rows(rows):
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row["clip_id"], []).append(row)
+
+    hybrid_rows = []
+    for clip_id, clip_rows in grouped.items():
+        families = {row.get("model_family", "") for row in clip_rows}
+        if not {"cnn", "vit"}.issubset(families):
+            continue
+        candidate_rows = []
+        family_seen = set()
+        for row in sorted(clip_rows, key=lambda item: (item.get("model_family", ""), item.get("model_name", ""))):
+            family = row.get("model_family", "")
+            if family in {"cnn", "vit"} and family not in family_seen:
+                candidate_rows.append(row)
+                family_seen.add(family)
+        if len(candidate_rows) < 2:
+            continue
+        hybrid_rows.append(concatenate_clip_feature_rows(candidate_rows))
+    return hybrid_rows
 
 
 def build_prediction_rows(model_key, rows, method_name, predicted_indices, probabilities=None, attention_weights=None):
@@ -195,6 +222,9 @@ def main():
     features = read_csv_rows(args.clip_features)
     labels = read_csv_rows(args.labels)
     merged_rows = merge_features_and_labels(features, labels)
+    hybrid_rows = build_hybrid_rows(merged_rows)
+    if hybrid_rows:
+        merged_rows.extend(hybrid_rows)
     if not merged_rows:
         raise RuntimeError("No labeled clip features were available after merging embeddings and labels.")
 
@@ -246,6 +276,69 @@ def main():
         )
         per_class_rows.extend(per_class_metric_rows(model_key, "mean_embedding_logreg", test_rows, logistic_predictions))
         confusion_matrix_rows.extend(confusion_rows(model_key, "mean_embedding_logreg", test_rows, logistic_predictions))
+
+        if model_family != "hybrid":
+            coral_model = fit_coral_logistic_probe(train_rows, test_rows)
+            coral_predictions, coral_probabilities = predict_probe(coral_model, test_rows, return_probabilities=True)
+            coral_metrics = metric_bundle(labels_to_indices(test_rows), coral_predictions)
+            metrics_rows.append(
+                {
+                    "model_name": model_name,
+                    "model_family": model_family,
+                    "hf_model_id": model_id,
+                    "method": "mean_embedding_logreg_coral",
+                    **coral_metrics,
+                }
+            )
+            prediction_rows.extend(
+                build_prediction_rows(
+                    model_key,
+                    test_rows,
+                    "mean_embedding_logreg_coral",
+                    coral_predictions,
+                    probabilities=coral_probabilities,
+                )
+            )
+            per_class_rows.extend(
+                per_class_metric_rows(model_key, "mean_embedding_logreg_coral", test_rows, coral_predictions)
+            )
+            confusion_matrix_rows.extend(
+                confusion_rows(model_key, "mean_embedding_logreg_coral", test_rows, coral_predictions)
+            )
+            notes.append(
+                f"{model_name}: mean_embedding_logreg_coral uses transductive CORAL alignment from dev embeddings to the unlabeled test embedding distribution."
+            )
+
+        mmd_model = fit_mmd_adapter_probe(train_rows, test_rows, device=device)
+        mmd_predictions, mmd_probabilities = predict_mmd_adapter(mmd_model, test_rows, device=device)
+        mmd_metrics = metric_bundle(labels_to_indices(test_rows), mmd_predictions)
+        metrics_rows.append(
+            {
+                "model_name": model_name,
+                "model_family": model_family,
+                "hf_model_id": model_id,
+                "method": "mean_embedding_mmd_adapter",
+                **mmd_metrics,
+            }
+        )
+        prediction_rows.extend(
+            build_prediction_rows(
+                model_key,
+                test_rows,
+                "mean_embedding_mmd_adapter",
+                mmd_predictions,
+                probabilities=mmd_probabilities,
+            )
+        )
+        per_class_rows.extend(
+            per_class_metric_rows(model_key, "mean_embedding_mmd_adapter", test_rows, mmd_predictions)
+        )
+        confusion_matrix_rows.extend(
+            confusion_rows(model_key, "mean_embedding_mmd_adapter", test_rows, mmd_predictions)
+        )
+        notes.append(
+            f"{model_name}: mean_embedding_mmd_adapter trains a transductive source-supervised adapter with an MMD penalty against the unlabeled test embedding distribution."
+        )
 
         hist_model = fit_hist_gradient_probe(train_rows)
         hist_predictions, hist_probabilities = predict_probe(hist_model, test_rows, return_probabilities=True)

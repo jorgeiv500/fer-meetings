@@ -1,8 +1,8 @@
 metric,value,notes
 total_rows,100,Rows found in the annotation sheet.
 resolved_labels,100,Rows with a final gold label after resolution.
-double_rated_clips,0,Rows with both rater_1_label and rater_2_label.
+double_rated_clips,100,Rows with both rater_1_label and rater_2_label.
 adjudicated_clips,0,Rows where adjudicated_label defined the final label.
 excluded_clips,0,Rows flagged with exclude_from_gold=true.
-observed_agreement,,Fraction of exact matches between rater 1 and rater 2.
-cohen_kappa,,Cohen's kappa across the three valence classes when double-rated clips exist.
+observed_agreement,0.77,Fraction of exact matches between rater 1 and rater 2.
+cohen_kappa,0.6174954265757526,Cohen's kappa across the three valence classes when double-rated clips exist.

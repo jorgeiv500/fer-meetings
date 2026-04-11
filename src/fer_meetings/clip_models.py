@@ -63,6 +63,147 @@ def fit_hist_gradient_probe(train_rows):
     return model
 
 
+def covariance_with_regularization(features, regularization=1e-3):
+    covariance = np.cov(features, rowvar=False)
+    if covariance.ndim == 0:
+        covariance = np.array([[float(covariance)]], dtype=np.float64)
+    covariance = np.array(covariance, dtype=np.float64)
+    covariance += np.eye(covariance.shape[0], dtype=np.float64) * float(regularization)
+    return covariance
+
+
+def matrix_power_symmetric(matrix, power, epsilon=1e-12):
+    values, vectors = np.linalg.eigh(matrix)
+    values = np.clip(values, epsilon, None)
+    powered = np.diag(np.power(values, power))
+    return vectors @ powered @ vectors.T
+
+
+def coral_align_source_to_target(source_features, target_features, regularization=1e-3):
+    source = np.array(source_features, dtype=np.float64)
+    target = np.array(target_features, dtype=np.float64)
+    if source.ndim != 2 or target.ndim != 2:
+        raise ValueError("CORAL alignment expects 2D feature matrices.")
+
+    source_mean = source.mean(axis=0, keepdims=True)
+    target_mean = target.mean(axis=0, keepdims=True)
+    source_centered = source - source_mean
+    target_centered = target - target_mean
+
+    source_cov = covariance_with_regularization(source_centered, regularization=regularization)
+    target_cov = covariance_with_regularization(target_centered, regularization=regularization)
+    alignment = matrix_power_symmetric(source_cov, -0.5) @ matrix_power_symmetric(target_cov, 0.5)
+    return ((source_centered @ alignment) + target_mean).astype(np.float32)
+
+
+def fit_coral_logistic_probe(train_rows, target_rows, regularization=1e-3):
+    aligned_features = coral_align_source_to_target(
+        mean_embedding_matrix(train_rows),
+        mean_embedding_matrix(target_rows),
+        regularization=regularization,
+    )
+    model = LogisticRegression(max_iter=2000, multi_class="multinomial")
+    model.fit(aligned_features, labels_to_indices(train_rows))
+    return model
+
+
+def pairwise_squared_distances(left, right):
+    left_norm = (left * left).sum(dim=1, keepdim=True)
+    right_norm = (right * right).sum(dim=1, keepdim=True).transpose(0, 1)
+    distances = left_norm + right_norm - 2.0 * left @ right.transpose(0, 1)
+    return torch.clamp(distances, min=0.0)
+
+
+def rbf_mmd(source_embeddings, target_embeddings, epsilon=1e-6):
+    with torch.no_grad():
+        combined = torch.cat([source_embeddings.detach(), target_embeddings.detach()], dim=0)
+        distances = pairwise_squared_distances(combined, combined)
+        positive = distances[distances > 0]
+        bandwidth = positive.median() if positive.numel() else torch.tensor(1.0, device=combined.device)
+        gamma = 1.0 / torch.clamp(2.0 * bandwidth, min=epsilon)
+
+    k_xx = torch.exp(-gamma * pairwise_squared_distances(source_embeddings, source_embeddings))
+    k_yy = torch.exp(-gamma * pairwise_squared_distances(target_embeddings, target_embeddings))
+    k_xy = torch.exp(-gamma * pairwise_squared_distances(source_embeddings, target_embeddings))
+    return k_xx.mean() + k_yy.mean() - 2.0 * k_xy.mean()
+
+
+class MMDAdapterClassifier(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim=128, num_classes=3, dropout=0.2):
+        super().__init__()
+        self.encoder = torch.nn.Sequential(
+            torch.nn.Linear(input_dim, hidden_dim),
+            torch.nn.LayerNorm(hidden_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(dropout),
+        )
+        self.classifier = torch.nn.Linear(hidden_dim, num_classes)
+
+    def forward(self, inputs):
+        embeddings = self.encoder(inputs)
+        logits = self.classifier(embeddings)
+        return logits, embeddings
+
+
+def fit_mmd_adapter_probe(train_rows, target_rows, seed=42, device="cpu", mmd_weight=0.2):
+    source_rows, validation_rows = make_validation_split(train_rows, seed=seed)
+    source_features = torch.tensor(mean_embedding_matrix(source_rows), dtype=torch.float32, device=device)
+    source_targets = torch.tensor(labels_to_indices(source_rows), dtype=torch.long, device=device)
+    target_features = torch.tensor(mean_embedding_matrix(target_rows), dtype=torch.float32, device=device)
+
+    input_dim = int(source_features.shape[1])
+    hidden_dim = min(128, max(48, input_dim // 8))
+    model = MMDAdapterClassifier(input_dim=input_dim, hidden_dim=hidden_dim).to(device)
+
+    class_counts = np.bincount(source_targets.detach().cpu().numpy(), minlength=len(LABEL_ORDER))
+    total = float(class_counts.sum())
+    class_weights = [total / (len(LABEL_ORDER) * max(float(count), 1.0)) for count in class_counts]
+    criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float32, device=device))
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+    if validation_rows:
+        validation_features = torch.tensor(mean_embedding_matrix(validation_rows), dtype=torch.float32, device=device)
+        validation_targets = labels_to_indices(validation_rows)
+    else:
+        validation_features = None
+        validation_targets = None
+
+    best_state = deepcopy(model.state_dict())
+    best_score = -1.0
+    remaining_patience = 25
+
+    for _ in range(200):
+        model.train()
+        optimizer.zero_grad()
+        logits, source_embeddings = model(source_features)
+        _, target_embeddings = model(target_features)
+        classification_loss = criterion(logits, source_targets)
+        loss = classification_loss + (float(mmd_weight) * rbf_mmd(source_embeddings, target_embeddings))
+        loss.backward()
+        optimizer.step()
+
+        if validation_rows:
+            model.eval()
+            with torch.no_grad():
+                validation_logits, _ = model(validation_features)
+            predicted = validation_logits.argmax(dim=-1).cpu().numpy()
+            score = f1_score(validation_targets, predicted, average="macro", zero_division=0)
+        else:
+            score = float(-loss.detach().cpu().item())
+
+        if score > best_score:
+            best_score = score
+            best_state = deepcopy(model.state_dict())
+            remaining_patience = 25
+        else:
+            remaining_patience -= 1
+            if remaining_patience <= 0:
+                break
+
+    model.load_state_dict(best_state)
+    return model
+
+
 def predict_probe(model, rows, return_probabilities=False):
     features = mean_embedding_matrix(rows)
     predictions = model.predict(features)
@@ -215,3 +356,13 @@ def predict_attention_pooler(model, rows, device="cpu"):
         probabilities = torch.softmax(logits, dim=-1).cpu().numpy()
         predicted = probabilities.argmax(axis=-1)
     return predicted, probabilities, weights.cpu().numpy()
+
+
+def predict_mmd_adapter(model, rows, device="cpu"):
+    features = torch.tensor(mean_embedding_matrix(rows), dtype=torch.float32, device=device)
+    model.eval()
+    with torch.no_grad():
+        logits, _ = model(features)
+        probabilities = torch.softmax(logits, dim=-1).cpu().numpy()
+        predicted = probabilities.argmax(axis=-1)
+    return predicted, probabilities

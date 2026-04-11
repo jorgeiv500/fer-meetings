@@ -18,6 +18,12 @@ from sklearn.metrics import (
 )
 
 from fer_meetings.constants import LABEL_ORDER
+from fer_meetings.fusion import (
+    entropy_weighted_probability_fusion,
+    label_from_probabilities,
+    mean_probability_fusion,
+    probability_vector,
+)
 from fer_meetings.labels import resolve_gold_label
 from fer_meetings.utils import ensure_parent, read_csv_rows, write_csv_rows
 
@@ -68,6 +74,76 @@ def group_rows_by_model(rows):
         )
         grouped.setdefault(key, []).append(row)
     return grouped
+
+
+def rows_have_prediction(rows, prediction_column):
+    return bool(rows) and all(str(row.get(prediction_column, "")).strip() for row in rows)
+
+
+def rows_have_probabilities(rows, probability_prefix):
+    if not probability_prefix:
+        return False
+    return bool(rows) and all(
+        str(row.get(f"{probability_prefix}_{label}_prob", "")).strip()
+        for row in rows
+        for label in LABEL_ORDER
+    )
+
+
+def group_rows_by_clip(rows):
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row["clip_id"], []).append(row)
+    return grouped
+
+
+def build_probability_ensemble_rows(rows):
+    grouped = group_rows_by_clip(rows)
+    ensemble_rows = []
+    for clip_id, clip_rows in grouped.items():
+        families = {row.get("model_family", "") for row in clip_rows}
+        if not {"cnn", "vit"}.issubset(families):
+            continue
+        ordered_rows = sorted(
+            clip_rows,
+            key=lambda row: (row.get("model_family", ""), row.get("model_name", ""), row.get("hf_model_id", "")),
+        )
+        base_row = dict(ordered_rows[0])
+        component_names = [row.get("model_name", "") for row in ordered_rows]
+        component_ids = [row.get("hf_model_id", "") for row in ordered_rows if row.get("hf_model_id", "")]
+        shared_metadata = {
+            "model_family": "hybrid",
+            "hf_model_id": " + ".join(component_ids),
+            "ensemble_components": " + ".join(component_names),
+        }
+
+        for ensemble_name, fusion_fn in [
+            ("cnn_vit_mean_ensemble", mean_probability_fusion),
+            ("cnn_vit_entropy_ensemble", entropy_weighted_probability_fusion),
+        ]:
+            ensemble_row = dict(base_row)
+            ensemble_row.update(shared_metadata)
+            ensemble_row["model_name"] = ensemble_name
+            ensemble_row["single_frame_raw_label"] = ""
+            ensemble_row["vote_label"] = ""
+            for probability_prefix, label_field in [
+                ("single_frame", "single_frame_label"),
+                ("smoothed", "smoothed_label"),
+            ]:
+                if not rows_have_probabilities(ordered_rows, probability_prefix):
+                    continue
+                fused_probabilities, weights = fusion_fn(
+                    [probability_vector(row, probability_prefix) for row in ordered_rows]
+                )
+                ensemble_row[label_field] = label_from_probabilities(fused_probabilities)
+                ensemble_row[f"{probability_prefix}_weights_json"] = json.dumps(
+                    {name: float(weight) for name, weight in zip(component_names, weights)},
+                    separators=(",", ":"),
+                )
+                for label_index, label in enumerate(LABEL_ORDER):
+                    ensemble_row[f"{probability_prefix}_{label}_prob"] = f"{float(fused_probabilities[label_index]):.6f}"
+            ensemble_rows.append(ensemble_row)
+    return ensemble_rows
 
 
 def metric_bundle(rows, prediction_column):
@@ -329,8 +405,14 @@ def main():
             if not scoped_rows:
                 continue
             for method_name, prediction_column, probability_prefix in methods:
+                if not rows_have_prediction(scoped_rows, prediction_column):
+                    continue
                 bundle = metric_bundle(scoped_rows, prediction_column)
-                probability_metrics = probability_metric_bundle(scoped_rows, probability_prefix) if probability_prefix else {}
+                probability_metrics = (
+                    probability_metric_bundle(scoped_rows, probability_prefix)
+                    if rows_have_probabilities(scoped_rows, probability_prefix)
+                    else {}
+                )
                 metrics_rows.append(
                     {
                         "model_name": model_name,
@@ -368,7 +450,7 @@ def main():
                         prediction_column,
                     )
                 )
-                if probability_prefix:
+                if rows_have_probabilities(scoped_rows, probability_prefix):
                     method_roc_rows, method_pr_rows = curve_rows(
                         model_name,
                         model_family,
@@ -442,6 +524,75 @@ def main():
                 notes.append(
                     f"Calibration for {model_name} used multinomial logistic regression over smoothed 3-class probabilities from split=dev."
                 )
+
+    ensemble_rows = build_probability_ensemble_rows(merged_rows)
+    for (model_name, model_family, model_id), model_rows in group_rows_by_model(ensemble_rows).items():
+        for scope in scopes:
+            scoped_rows = rows_for_scope(model_rows, scope)
+            if not scoped_rows:
+                continue
+            for method_name, prediction_column, probability_prefix in methods:
+                if not rows_have_prediction(scoped_rows, prediction_column):
+                    continue
+                bundle = metric_bundle(scoped_rows, prediction_column)
+                probability_metrics = (
+                    probability_metric_bundle(scoped_rows, probability_prefix)
+                    if rows_have_probabilities(scoped_rows, probability_prefix)
+                    else {}
+                )
+                metrics_rows.append(
+                    {
+                        "model_name": model_name,
+                        "model_family": model_family,
+                        "hf_model_id": model_id,
+                        "scope": scope,
+                        "method": method_name,
+                        "n_clips": bundle["n_clips"],
+                        "accuracy": bundle["accuracy"],
+                        "balanced_accuracy": bundle["balanced_accuracy"],
+                        "macro_f1": bundle["macro_f1"],
+                        "auroc_ovr": probability_metrics.get("auroc_ovr", ""),
+                        "auprc_macro": probability_metrics.get("auprc_macro", ""),
+                        "brier_macro": probability_metrics.get("brier_macro", ""),
+                    }
+                )
+                confusion_rows.extend(
+                    matrix_to_rows(
+                        model_name,
+                        model_family,
+                        model_id,
+                        scope,
+                        method_name,
+                        bundle["confusion_matrix"],
+                    )
+                )
+                per_class_rows.extend(
+                    per_class_metric_rows(
+                        model_name,
+                        model_family,
+                        model_id,
+                        scope,
+                        method_name,
+                        scoped_rows,
+                        prediction_column,
+                    )
+                )
+                if rows_have_probabilities(scoped_rows, probability_prefix):
+                    method_roc_rows, method_pr_rows = curve_rows(
+                        model_name,
+                        model_family,
+                        model_id,
+                        scope,
+                        method_name,
+                        scoped_rows,
+                        probability_prefix,
+                    )
+                    roc_curve_rows.extend(method_roc_rows)
+                    pr_curve_rows.extend(method_pr_rows)
+    if ensemble_rows:
+        notes.append(
+            "Hybrid CNN+ViT ensemble rows were added with mean-probability fusion and entropy-weighted fusion over paired clip probabilities."
+        )
 
     metrics_rows = sorted(
         metrics_rows,

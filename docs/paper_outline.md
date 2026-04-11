@@ -137,34 +137,45 @@ No recomiendo como foco principal:
 
 Eso abriría demasiado el scope y debilitaría la claridad del paper.
 
-## Tablas e imágenes planificadas desde el inicio
+## Paquete visual recomendado para la versión actual
 
-### Main text
+### Figuras ya listas
 
-- `6` figuras
-- `5` tablas
+1. `main_test_macro_f1.png`
+   ranking horizontal claro de métodos principales en `test`
+2. `main_test_scorecard.png`
+   heatmap compacto con `Macro-F1`, `Balanced Accuracy` y `Accuracy`
+3. `clip_models_macro_f1.png`
+   ranking de adaptación supervisada a nivel de clip
+4. `label_distribution.png`
+   distribución de etiquetas por split
+5. `interrater_overview.png`
+   acuerdo entre evaluadores humanos
+6. `selected_confusions.png`
+   panel pequeño de matrices de confusión para los modelos representativos más fuertes
 
-### Appendix / supplementary
+### Tablas ya listas
 
-- `4` figuras
-- `2` tablas
+1. `dataset_summary.csv/md`
+2. `interrater_summary.csv/md`
+3. `main_model_comparison.csv/md`
+4. `clip_model_comparison.csv/md`
+5. `label_distribution.csv/md`
 
-### Figuras principales sugeridas
+### Figuras que todavía conviene producir manualmente
 
 1. Pipeline completo del experimento
-2. Ejemplos del cambio de dominio `FER2013` vs `AMI`
-3. Protocolo de anotación y construcción del outcome
-4. Comparación principal `CNN` vs `ViT` y variantes temporales
-5. Calibration / confusion / robustness en multipanel
-6. Casos cualitativos: acierto, fallo y mejora por agregación temporal
+2. Ejemplos visuales del cambio de dominio `FER2013` vs `AMI`
+3. Casos cualitativos de acierto, fallo y mejora por agregación temporal
 
-### Tablas principales sugeridas
+### Qué se decidió sacar del paquete editorial
 
-1. Descripción del dataset anotado
-2. Acuerdo interanotador y consolidación
-3. Benchmark principal de modelos
-4. Sensibilidad por longitud de clip, pooling y mapeo a valencia
-5. Error analysis por subgrupos y condiciones visuales
+- curvas `ROC/PR` con demasiadas series en una sola figura
+- baterías completas de `confusion_*.png` por método
+- gráficos con nombres de método demasiado largos en el eje x
+- tablas auxiliares que repetían resultados sin ayudar a la historia central
+
+La regla editorial ahora es: cada figura debe contestar una sola pregunta y seguir siendo legible sin leer el código del experimento.
 
 ## Resultados que sí serían publicables
 
@@ -198,11 +209,19 @@ Si el temporal attention pooling no mejora al promedio simple, eso también es �
    - pooling temporal;
    - adaptación supervisada de clip;
    - evaluación y calibración.
-5. Añadir métricas de robustez:
-   - `macro-F1`
-   - `balanced accuracy`
-   - `ECE` o `Brier`
-   - métricas por subgrupo de calidad facial
+5. Mantener un paquete de `paper_assets` curado:
+   - pocas figuras
+   - etiquetas cortas
+   - variedad visual real
+   - cero outputs redundantes en el directorio editorial
+
+## Estado de avance
+
+- `annotation_pack` ya soporta `humano 1`, `humano 2`, `adjudicado` y `acuerdo`
+- el set actual tiene `100` clips doblemente evaluados
+- el mejor zero-shot en `test` sigue siendo `ViT | Single frame`
+- el mejor resultado global del proyecto es `Fusion | Clip LogReg`
+- la siguiente prioridad de escritura ya no es más benchmarking, sino narrativa del paper y selección cualitativa
 
 ## Claim final recomendado
 
@@ -216,3 +235,119 @@ No afirmar:
 - que el modelo es listo para despliegue real;
 - que `ViT` o cualquier arquitectura es superior de forma universal;
 - que una mejora marginal implica comprensión contextual de la reunión.
+
+## Orden recomendado del manuscrito
+
+### Introducción
+
+Abrir con tres ideas:
+
+1. los modelos FER entrenados en datasets estándar sufren degradación fuerte al pasar a video de reuniones;
+2. no está claro si el beneficio potencial de `ViT` sobre `CNN` sobrevive ese cambio de dominio;
+3. una agregación temporal ligera y una adaptación supervisada pequeña pueden recuperar parte de la señal sin fine-tuning pesado.
+
+No meter figuras aquí. La introducción debe vender el problema y la pregunta.
+
+### Datos y anotación
+
+Usar primero:
+
+1. `dataset_summary.csv/md`
+2. `label_distribution.png`
+3. `interrater_summary.csv/md`
+4. `interrater_overview.png`
+
+Mensaje de la sección:
+
+- el dataset es pequeño pero controlado y doblemente evaluado;
+- la distribución por split es legible y suficiente para un piloto;
+- el acuerdo humano es razonable, así que el cuello de botella no es solo ruido de anotación.
+
+Captions base:
+
+- **Figura. `label_distribution.png`**: Distribución de etiquetas de valencia en `dev` y `test`, mostrando un balance moderado entre clases y tamaños homogéneos por split.
+- **Figura. `interrater_overview.png`**: Resumen del acuerdo entre los dos evaluadores humanos, con conteos de acuerdo/desacuerdo y métricas globales de consistencia.
+- **Tabla. `dataset_summary.csv/md`**: Resumen del conjunto AMI close-up usado en el estudio, con número de clips, splits y cobertura de anotación.
+- **Tabla. `interrater_summary.csv/md`**: Métricas de acuerdo entre evaluadores sobre los clips doblemente anotados.
+
+### Protocolo experimental
+
+Describir aquí las tres familias:
+
+1. transferencia directa `single-frame`;
+2. agregación temporal ligera sin entrenamiento fuerte;
+3. adaptación supervisada a nivel de clip con embeddings congelados.
+
+No hace falta una figura nueva si no está lista todavía. Si luego haces el diagrama del pipeline, este sería su lugar.
+
+### Resultados principales
+
+Orden recomendado:
+
+1. `main_test_macro_f1.png`
+2. `main_test_scorecard.png`
+3. `main_model_comparison.csv/md`
+
+Mensaje de la sección:
+
+- comparar primero familias de método;
+- después mostrar que la lectura no cambia al mirar varias métricas;
+- cerrar con la tabla para dejar valores exactos y significancia práctica.
+
+Captions base:
+
+- **Figura. `main_test_macro_f1.png`**: Ranking de los métodos principales en `test` según `Macro-F1`, destacando la degradación fuera de dominio y las diferencias entre `CNN` y `ViT`.
+- **Figura. `main_test_scorecard.png`**: Comparación compacta de `Macro-F1`, `Balanced Accuracy` y `Accuracy` para los métodos principales en `test`.
+- **Tabla. `main_model_comparison.csv/md`**: Resultados cuantitativos completos de los métodos principales en el split `test`.
+
+### Resultados de adaptación a nivel de clip
+
+Orden recomendado:
+
+1. `clip_models_macro_f1.png`
+2. `clip_model_comparison.csv/md`
+
+Mensaje de la sección:
+
+- esta es la parte donde aparece la mejora importante del proyecto;
+- conviene enfatizar que el mayor salto no viene del backbone solo, sino de la representación de clip y la adaptación ligera.
+
+Captions base:
+
+- **Figura. `clip_models_macro_f1.png`**: Desempeño de los modelos supervisados a nivel de clip, mostrando que la adaptación ligera sobre embeddings supera claramente a la transferencia directa.
+- **Tabla. `clip_model_comparison.csv/md`**: Comparación detallada de los modelos de adaptación a nivel de clip y fusión entre backbones.
+
+### Análisis de error
+
+Usar:
+
+1. `selected_confusions.png`
+
+Mensaje de la sección:
+
+- el error dominante es la separación entre `neutral` y los extremos;
+- esta figura debe apoyar una discusión corta, no una galería extensa de matrices.
+
+Caption base:
+
+- **Figura. `selected_confusions.png`**: Matrices de confusión de modelos representativos, usadas para identificar patrones de error recurrentes bajo cambio de dominio.
+
+## Secuencia final de assets en el paper
+
+Si el manuscrito queda corto, la secuencia más limpia es:
+
+1. `label_distribution.png`
+2. `interrater_overview.png`
+3. `main_test_macro_f1.png`
+4. `main_test_scorecard.png`
+5. `clip_models_macro_f1.png`
+6. `selected_confusions.png`
+
+Y las tablas:
+
+1. `dataset_summary.csv/md`
+2. `interrater_summary.csv/md`
+3. `main_model_comparison.csv/md`
+4. `clip_model_comparison.csv/md`
+
+Con eso el paper mantiene una historia simple: datos y acuerdo, resultados principales, mejora por adaptación de clip, y análisis de error.

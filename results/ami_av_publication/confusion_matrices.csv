@@ -59,3 +59,39 @@ vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,test,vot
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed_calibrated,negative,2,6,0
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed_calibrated,neutral,6,24,0
 vit_face_expression,vit,mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed_calibrated,positive,6,3,3
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,single_frame,negative,24,3,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,single_frame,neutral,19,32,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,single_frame,positive,17,5,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,smoothed,negative,27,0,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,smoothed,neutral,14,37,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,smoothed,positive,18,4,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,single_frame,negative,17,2,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,single_frame,neutral,9,12,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,single_frame,positive,6,4,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,smoothed,negative,19,0,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,smoothed,neutral,4,17,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,smoothed,positive,6,4,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,single_frame,negative,7,1,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,single_frame,neutral,10,20,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,single_frame,positive,11,1,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed,negative,8,0,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed,neutral,10,20,0
+cnn_vit_mean_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed,positive,12,0,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,single_frame,negative,23,4,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,single_frame,neutral,18,33,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,single_frame,positive,17,5,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,smoothed,negative,27,0,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,smoothed,neutral,15,36,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,all,smoothed,positive,19,3,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,single_frame,negative,16,3,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,single_frame,neutral,8,13,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,single_frame,positive,6,4,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,smoothed,negative,19,0,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,smoothed,neutral,5,16,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,dev,smoothed,positive,7,3,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,single_frame,negative,7,1,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,single_frame,neutral,10,20,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,single_frame,positive,11,1,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed,negative,8,0,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed,neutral,10,20,0
+cnn_vit_entropy_ensemble,hybrid,firedfrog/convnext-tiny-224-emotion-prediction + mo-thecreator/vit-Facial-Expression-Recognition,test,smoothed,positive,12,0,0

@@ -76,6 +76,7 @@ class AnnotationPackTests(unittest.TestCase):
         self.assertIn("Guardar CSV", html_text)
         self.assertIn("data-action=\"set-label\"", html_text)
         self.assertIn("window.showSaveFilePicker", html_text)
+        self.assertIn("humano 2", html_text)
         self.assertIn("\"clip_id\": \"clip_1\"", html_text)
 
 

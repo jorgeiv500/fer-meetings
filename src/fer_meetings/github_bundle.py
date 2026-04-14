@@ -21,6 +21,8 @@ DEFAULT_BUNDLE_PATHS = (
     "results/.gitkeep",
     "results/ami_av_publication",
 )
+IGNORE_NAMES = ("__pycache__", ".DS_Store")
+IGNORE_SUFFIXES = (".pyc", ".pyo", ".egg-info")
 
 
 def parse_args():
@@ -32,6 +34,14 @@ def parse_args():
 
 def bundle_paths():
     return DEFAULT_BUNDLE_PATHS
+
+
+def ignore_generated_entries(_, names):
+    ignored = []
+    for name in names:
+        if name in IGNORE_NAMES or name.endswith(IGNORE_SUFFIXES):
+            ignored.append(name)
+    return ignored
 
 
 def copy_bundle(root_dir, output_dir, relative_paths=None, force=False):
@@ -58,7 +68,7 @@ def copy_bundle(root_dir, output_dir, relative_paths=None, force=False):
 
         destination = output_dir / relative
         if source.is_dir():
-            shutil.copytree(source, destination)
+            shutil.copytree(source, destination, ignore=ignore_generated_entries)
         else:
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)

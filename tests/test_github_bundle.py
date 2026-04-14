@@ -38,6 +38,27 @@ class GitHubBundleTests(unittest.TestCase):
                 "summary",
             )
 
+    def test_copy_bundle_ignores_generated_entries_inside_directories(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir) / "source"
+            output = Path(temp_dir) / "bundle"
+            (root / "src" / "pkg" / "__pycache__").mkdir(parents=True)
+            (root / "src" / "pkg.egg-info").mkdir(parents=True)
+            (root / "src" / "pkg" / "module.py").write_text("print('ok')", encoding="utf-8")
+            (root / "src" / "pkg" / "__pycache__" / "module.cpython-311.pyc").write_bytes(b"pyc")
+            (root / "src" / "pkg.egg-info" / "PKG-INFO").write_text("metadata", encoding="utf-8")
+
+            copy_bundle(
+                root_dir=root,
+                output_dir=output,
+                relative_paths=("src",),
+                force=False,
+            )
+
+            self.assertTrue((output / "src" / "pkg" / "module.py").exists())
+            self.assertFalse((output / "src" / "pkg" / "__pycache__").exists())
+            self.assertFalse((output / "src" / "pkg.egg-info").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

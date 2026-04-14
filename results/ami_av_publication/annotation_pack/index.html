@@ -213,16 +213,16 @@
       </select>
     </label>
     <div class="toolbar-actions">
-      <button id="saveFileBtn" type="button">Guardar CSV</button>
-      <button id="downloadBtn" class="secondary" type="button">Descargar copia</button>
-      <button id="resetDraftBtn" class="secondary" type="button">Limpiar borrador</button>
+      <button id="saveFileBtn" type="button">Save CSV</button>
+      <button id="downloadBtn" class="secondary" type="button">Download copy</button>
+      <button id="resetDraftBtn" class="secondary" type="button">Clear local draft</button>
     </div>
   </div>
   <div class="status-bar">
-    <span class="chip"><strong id="visibleCount">0</strong> visibles</span>
-    <span class="chip"><strong id="labeledCount">0</strong> con gold_label</span>
-    <span class="chip"><strong id="dirtyCount">0</strong> cambios locales</span>
-    <span class="chip"><strong id="saveStatus">Borrador local activo</strong></span>
+    <span class="chip"><strong id="visibleCount">0</strong> visible rows</span>
+    <span class="chip"><strong id="labeledCount">0</strong> with gold_label</span>
+    <span class="chip"><strong id="dirtyCount">0</strong> local changes</span>
+    <span class="chip"><strong id="saveStatus">Local draft active</strong></span>
   </div>
   <table>
     <thead>
@@ -355,7 +355,7 @@
       anchor.download = filename;
       anchor.click();
       URL.revokeObjectURL(url);
-      elements.saveStatus.textContent = "CSV descargado";
+      elements.saveStatus.textContent = "CSV downloaded";
     }
 
     async function saveCsv() {
@@ -374,7 +374,7 @@
           const writable = await handle.createWritable();
           await writable.write(csvText);
           await writable.close();
-          elements.saveStatus.textContent = "CSV guardado en disco";
+          elements.saveStatus.textContent = "CSV saved to disk";
           return;
         } catch (error) {
           if (error && error.name === "AbortError") {
@@ -399,7 +399,7 @@
     function clearDrafts() {
       draftState.clear();
       localStorage.removeItem(STORAGE_KEY);
-      elements.saveStatus.textContent = "Borrador local limpiado";
+      elements.saveStatus.textContent = "Local draft cleared";
       renderRows();
     }
 
@@ -463,19 +463,19 @@
               <div class="segmented">${buttonGroup}</div>
               <div class="review-grid">
                 <div class="review-card">
-                  <div class="review-card-title">humano 1</div>
+                  <div class="review-card-title">rater 1</div>
                   ${reviewBadge(row.rater_1_label)}
                 </div>
                 <div class="review-card">
-                  <div class="review-card-title">humano 2</div>
+                  <div class="review-card-title">rater 2</div>
                   ${reviewBadge(row.rater_2_label)}
                 </div>
                 <div class="review-card">
-                  <div class="review-card-title">adjudicado</div>
+                  <div class="review-card-title">adjudicated</div>
                   ${reviewBadge(row.adjudicated_label)}
                 </div>
                 <div class="review-card">
-                  <div class="review-card-title">acuerdo</div>
+                  <div class="review-card-title">agreement</div>
                   <div class="review-status">${escapeHtml(row.agreement_status || "pending")}</div>
                 </div>
               </div>
@@ -496,14 +496,14 @@
                   value="${escapeHtml(row.annotator || "")}"
                   data-action="annotator"
                   data-clip-id="${escapeHtml(row.clip_id)}"
-                  placeholder="nombre o iniciales">
+                  placeholder="name or initials">
               </div>
               <div class="field-row">
                 <label>notes</label>
                 <textarea
                   data-action="notes"
                   data-clip-id="${escapeHtml(row.clip_id)}"
-                  placeholder="notas opcionales">${escapeHtml(row.notes || "")}</textarea>
+                  placeholder="optional notes">${escapeHtml(row.notes || "")}</textarea>
               </div>
               <div class="inline-note">suggested: <strong>${escapeHtml(row.suggested_label || "none")}</strong></div>
             </td>
@@ -539,7 +539,7 @@
       const button = event.target.closest("[data-action='set-label']");
       if (!button) return;
       updateRow(button.dataset.clipId, { gold_label: button.dataset.label });
-      elements.saveStatus.textContent = "Cambios guardados localmente";
+      elements.saveStatus.textContent = "Changes saved locally";
     });
 
     elements.body.addEventListener("change", (event) => {
@@ -548,7 +548,7 @@
       if (!clipId) return;
       if (target.dataset.action === "toggle-exclude") {
         updateRow(clipId, { exclude_from_gold: target.checked ? "true" : "false" });
-        elements.saveStatus.textContent = "Cambios guardados localmente";
+        elements.saveStatus.textContent = "Changes saved locally";
       }
     });
 
@@ -562,13 +562,13 @@
       if (target.dataset.action === "notes") {
         updateRow(clipId, { notes: target.value });
       }
-      elements.saveStatus.textContent = "Cambios guardados localmente";
+      elements.saveStatus.textContent = "Changes saved locally";
     });
 
     elements.saveFileBtn.addEventListener("click", saveCsv);
     elements.downloadBtn.addEventListener("click", () => downloadCsv("annotation_sheet.copy.csv"));
     elements.resetDraftBtn.addEventListener("click", () => {
-      if (confirm("Esto borrará el borrador local no exportado. ¿Continuar?")) {
+      if (confirm("This will delete the unexported local draft. Continue?")) {
         clearDrafts();
       }
     });

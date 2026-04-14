@@ -1,27 +1,27 @@
-# Resultados versionados
+# Versioned Results
 
-Este directorio conserva solo los artefactos que ayudan a inspeccionar, reproducir y escribir el experimento sin subir datos descargados ni dumps pesados regenerables.
+This directory keeps only the artifacts that make the canonical run inspectable, reproducible, and easy to write up without committing downloaded datasets or heavyweight regenerable dumps.
 
-## Se versiona
+## Included
 
-- `annotation_pack/`: paquete HTML para revisar etiquetas y validaciones humanas
-- `clip_labels.csv`: etiquetas consolidadas por clip
-- `metrics.csv`, `metrics.json`, `confusion_matrices.csv`, `per_class_metrics.csv`: resumen de evaluación principal
-- `clip_models/`: métricas y resúmenes compactos de adaptación a nivel de clip
-- `paper_assets/`: figuras y tablas curadas para el manuscrito
-- `reports/`: fichas de experimento, datos, ética y reproducibilidad
-- `summary.md`: resumen rápido del run canónico
+- `annotation_pack/`: HTML review package for clip annotation and human validation
+- `clip_labels.csv`: resolved clip labels used for evaluation
+- `metrics.csv`, `metrics.json`, `confusion_matrices.csv`, `per_class_metrics.csv`: compact main-evaluation outputs
+- `clip_models/`: compact metrics and summaries for clip-level adaptation
+- `paper_assets/`: curated manuscript figures and tables
+- `reports/`: experiment card, data sheet, ethics note, and reproducibility checklist
+- `summary.md`: quick overview of the canonical run
 
-## No se versiona
+## Not included
 
-- videos y snapshots descargados desde Hugging Face
-- `frame_details.csv` y `clip_features.csv`
-- dumps completos de predicciones frame-level o clip-level
-- curvas exhaustivas `PR/ROC` y archivos `.zip` duplicados del mismo contenido
+- downloaded videos and dataset snapshots from Hugging Face
+- `frame_details.csv` and `clip_features.csv`
+- full frame-level or clip-level prediction dumps
+- exhaustive `PR/ROC` exports and duplicate zip archives
 
-## Cómo regenerar lo omitido
+## How to regenerate omitted artifacts
 
-Desde la raíz del repo:
+From the repository root:
 
 ```bash
 make fetch-fer
@@ -31,4 +31,4 @@ make experiment-prelabels
 make experiment-postlabels
 ```
 
-La configuración canónica usada para esta corrida es `configs/ami_av_cnn_vit_publication.json`.
+The canonical configuration for this run is [../../configs/ami_av_cnn_vit_publication.json](../../configs/ami_av_cnn_vit_publication.json).

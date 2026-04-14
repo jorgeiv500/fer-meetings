@@ -1,160 +1,160 @@
 # Paper Outline
 
-## Título base
+## Working title
 
 Cross-Domain Transfer of Facial Affect Recognition to Meeting Video: Comparing CNN and Vision Transformer Representations on the AMI Corpus
 
-## Pregunta de investigación
+## Research question
 
-¿Qué tan severa es la degradación fuera de dominio cuando modelos FER preentrenados se transfieren desde datasets faciales estándar a clips close-up de reuniones AMI, cómo cambia esa degradación entre backbones `CNN` y `Vision Transformer`, y cuánto se puede recuperar con agregación temporal y adaptación supervisada ligera a nivel de clip?
+How severe is out-of-domain degradation when FER models pretrained on standard facial datasets are transferred to close-up AMI meeting clips, how does that degradation differ between `CNN` and `Vision Transformer` backbones, and how much of the lost signal can be recovered with lightweight temporal aggregation and clip-level supervised adaptation?
 
-## Hipótesis principal
+## Main hypothesis
 
-1. El rendimiento `single-frame` cae de forma marcada en AMI para cualquier backbone.
-2. La agregación temporal mejora estabilidad y `macro-F1` frente a la predicción de un solo frame.
-3. Las representaciones congeladas de clip son más útiles que las probabilidades frame a frame crudas para adaptación de bajo costo.
-4. La diferencia entre `CNN` y `ViT` no debe asumirse a priori; el paper debe evaluar si la ventaja proviene de la arquitectura, de la calibración o de la representación temporal.
+1. `Single-frame` performance drops sharply on AMI for any backbone.
+2. Temporal aggregation improves stability and `macro-F1` relative to a single-frame prediction.
+3. Frozen clip representations are more useful than raw frame-level probabilities for low-cost adaptation.
+4. Any `CNN` versus `ViT` advantage should be demonstrated empirically rather than assumed from architecture alone.
 
-## Framing metodológico recomendado
+## Recommended framing
 
-No vender el trabajo como "aplicamos un modelo FER a AMI".
+Do not frame the paper as "we applied an FER model to AMI."
 
-Venderlo como:
+Frame it as:
 
-1. estudio de **generalización de dominio**;
-2. comparación entre **familias de representación visual** (`CNN` vs `ViT`);
-3. estudio de **agregación temporal de bajo costo** para valencia observable a nivel de clip;
-4. evaluación de **adaptación ligera y reproducible** en un dataset objetivo pequeño.
+1. a **domain generalization** study
+2. a comparison between visual representation families: `CNN` versus `ViT`
+3. a study of **low-cost temporal aggregation** for observable clip-level valence
+4. an evaluation of **lightweight, reproducible adaptation** on a small target dataset
 
-## Qué ya soporta el proyecto
+## What the current project already supports
 
-El repo actual ya implementa un piloto reproducible:
+The repository already implements a reproducible pilot:
 
-- manifiesto de clips AMI;
-- inferencia frame-level con modelo Hugging Face;
-- agregación temporal simple;
-- evaluación contra `gold_label`;
-- calibración ligera en `dev`.
+- an AMI clip manifest
+- frame-level inference with Hugging Face models
+- simple temporal aggregation
+- evaluation against `gold_label`
+- lightweight calibration on `dev`
 
-Además, la clase `HfEmotionClassifier` ya usa `AutoImageProcessor` y `AutoModelForImageClassification`, así que puede cargar tanto modelos `CNN` como modelos `ViT` sin rediseñar el pipeline principal.
+The `HfEmotionClassifier` class already uses `AutoImageProcessor` and `AutoModelForImageClassification`, so the same pipeline can load both `CNN` and `ViT` backbones without redesign.
 
-## Reenfoque técnico del proyecto
+## Technical reframing
 
-### Línea A. Baselines de transferencia directa
+### Track A. Direct transfer baselines
 
-- `A0`: `single-frame` con frame central
-- `A1`: `mean pooling` de probabilidades
+- `A0`: center-frame `single-frame`
+- `A1`: probability `mean pooling`
 - `A2`: `majority vote`
-- `A3`: `temperature scaling` o calibración multinomial en `dev`
+- `A3`: `temperature scaling` or multinomial calibration on `dev`
 
-Esto preserva la lógica del repo actual y funciona como línea base obligatoria.
+These are the mandatory baselines because they preserve the current repository logic and make the rest of the paper interpretable.
 
-### Línea B. Comparación entre familias de backbone
+### Track B. Backbone-family comparison
 
-Comparar al menos dos extractores fuente:
+Compare at least two source feature extractors:
 
-- `CNN-FER`: por ejemplo `ResNet` o `EfficientNet` entrenado para expresión facial
-- `ViT-FER`: `ViT` o `DeiT` afinado para clasificación de emoción facial
+- `CNN-FER`: for example `ResNet`, `EfficientNet`, or `ConvNeXt` fine-tuned for facial expression
+- `ViT-FER`: for example `ViT` or `DeiT` fine-tuned for facial expression
 
-Lo importante no es solo comparar accuracy final, sino analizar:
+The comparison should go beyond final accuracy and inspect:
 
-- robustez fuera de dominio;
-- confianza/calibración;
-- estabilidad temporal;
-- sensibilidad a pose, blur, oclusión y baja expresividad.
+- out-of-domain robustness
+- confidence and calibration
+- temporal stability
+- sensitivity to pose, blur, occlusion, and subtle expressivity
 
-### Línea C. Adaptación ligera a nivel de clip
+### Track C. Lightweight clip-level adaptation
 
-A partir de embeddings congelados por frame:
+Starting from frozen frame embeddings:
 
-- `C0`: `Logistic Regression` sobre embedding promedio del clip
-- `C1`: `HistGradientBoosting` o `XGBoost` sobre features agregadas del clip
-- `C2`: `Linear probe` sobre embedding pooled
+- `C0`: `Logistic Regression` over the mean clip embedding
+- `C1`: `HistGradientBoosting` or `XGBoost` over aggregated clip features
+- `C2`: `Linear probe` over pooled embeddings
 
-Esto es más fuerte para la revista que quedarse solo en etiquetas frame-level, porque introduce análisis de representación sin requerir fine-tuning pesado.
+This is stronger than staying at frame labels only because it turns the study into a representation-transfer paper without requiring heavy backbone fine-tuning.
 
-### Línea D. Método más interesante y todavía defendible
+### Track D. Strongest extension still within scope
 
-La extensión más interesante dentro del alcance del proyecto no es una GNN forzada, sino una de estas dos:
+The most interesting extension in scope is not a forced GNN. It is one of these:
 
-1. **Temporal attention pooling / temporal transformer pequeño**
-   - entrada: embeddings de varios frames del clip
-   - salida: una sola predicción de valencia del clip
-   - valor: modela expresividad sutil y estabilidad temporal mejor que promedio simple
+1. **Temporal attention pooling / a small temporal transformer**
+   - input: embeddings from several frames of the clip
+   - output: one clip-level valence prediction
+   - value: models subtle facial dynamics better than a plain mean
 
-2. **Análisis explícito de cambio de dominio en el espacio de representación**
-   - medir separabilidad `FER2013 vs AMI` en embeddings `CNN` y `ViT`
-   - usar métricas como distancia entre centroides, `MMD`, `CORAL loss` solo como análisis, o un clasificador de dominio
-   - valor: convierte el paper en uno de pattern representation bajo domain shift, más alineado con la revista
+2. **Explicit domain-shift analysis in representation space**
+   - measure `FER2013` versus `AMI` separability in `CNN` and `ViT` embeddings
+   - use centroid distances, `MMD`, `CORAL`, or a simple domain classifier as analysis tools
+   - value: repositions the paper as a representation study under domain shift
 
-Si hay que elegir solo una extensión, la mejor combinación de interés y factibilidad es:
+If only one extension is kept, the best mix of interest and feasibility is:
 
-- `CNN` vs `ViT`
-- `mean pooling` vs `attention pooling`
-- `linear probe` sobre embeddings de clip
+- `CNN` versus `ViT`
+- `mean pooling` versus `attention pooling`
+- `linear probe` over clip embeddings
 
-## Propuesta de familias experimentales
+## Experimental families
 
-### Familia 1. Zero-shot directo
+### Family 1. Direct zero-shot transfer
 
 - `E0-CNN`: single frame
 - `E0-ViT`: single frame
 
-### Familia 2. Agregación temporal sin entrenamiento
+### Family 2. Temporal aggregation without training
 
 - `E1-CNN`: mean pooling / vote
 - `E1-ViT`: mean pooling / vote
 
-### Familia 3. Adaptación ligera supervisada
+### Family 3. Lightweight supervised adaptation
 
-- `E2-CNN`: calibración y/o `linear probe` sobre clip embeddings
-- `E2-ViT`: calibración y/o `linear probe` sobre clip embeddings
+- `E2-CNN`: calibration and/or `linear probe` on clip embeddings
+- `E2-ViT`: calibration and/or `linear probe` on clip embeddings
 
-### Familia 4. Agregación temporal aprendida
+### Family 4. Learned temporal aggregation
 
-- `E3-CNN`: temporal attention pooling sobre embeddings
-- `E3-ViT`: temporal attention pooling sobre embeddings
+- `E3-CNN`: temporal attention pooling over embeddings
+- `E3-ViT`: temporal attention pooling over embeddings
 
-## Recomendación de scope final
+## Recommended final scope
 
-Para no romper el carácter de piloto, el paper debería cerrar con este núcleo:
+To keep the pilot defensible, the paper should close around this core:
 
-1. dos backbones fuente: `CNN` y `ViT`;
-2. tres niveles de inferencia:
-   - frame único;
-   - pooling temporal simple;
-   - pooling temporal aprendido o `linear probe` sobre clip embeddings;
-3. outcome humano de valencia en tres clases;
-4. evaluación agrupada por reunión/escenario;
-5. análisis de error por calidad visual y expresividad sutil.
+1. two source backbones: `CNN` and `ViT`
+2. three inference levels
+   - single frame
+   - simple temporal pooling
+   - learned pooling or `linear probe` over clip embeddings
+3. three-class human valence labels
+4. evaluation grouped by meeting or scenario
+5. error analysis around visual quality and subtle expressivity
 
-No recomiendo como foco principal:
+Do not make these the main focus:
 
-- GNN sobre clips;
-- siete emociones discretas;
-- fine-tuning completo del backbone en AMI;
-- multimodalidad audio-video en esta primera versión.
+- clip GNNs
+- seven discrete emotions
+- full backbone fine-tuning on AMI
+- audio-video multimodality in the first paper
 
-Eso abriría demasiado el scope y debilitaría la claridad del paper.
+That would widen the scope too much and weaken the paper's central claim.
 
-## Paquete visual recomendado para la versión actual
+## Recommended visual package
 
-### Figuras ya listas
+### Figures already ready
 
 1. `main_test_macro_f1.png`
-   ranking horizontal claro de métodos principales en `test`
+   clear horizontal ranking of the main methods on `test`
 2. `main_test_scorecard.png`
-   heatmap compacto con `Macro-F1`, `Balanced Accuracy` y `Accuracy`
+   compact heatmap of `Macro-F1`, `Balanced Accuracy`, and `Accuracy`
 3. `clip_models_macro_f1.png`
-   ranking de adaptación supervisada a nivel de clip
+   ranking of clip-level supervised adaptation methods
 4. `label_distribution.png`
-   distribución de etiquetas por split
+   label distribution by split
 5. `interrater_overview.png`
-   acuerdo entre evaluadores humanos
+   human agreement overview
 6. `selected_confusions.png`
-   panel pequeño de matrices de confusión para los modelos representativos más fuertes
+   small confusion-matrix panel for representative methods
 
-### Tablas ya listas
+### Tables already ready
 
 1. `dataset_summary.csv/md`
 2. `interrater_summary.csv/md`
@@ -162,179 +162,179 @@ Eso abriría demasiado el scope y debilitaría la claridad del paper.
 4. `clip_model_comparison.csv/md`
 5. `label_distribution.csv/md`
 
-### Figuras que todavía conviene producir manualmente
+### Figures still worth producing manually
 
-1. Pipeline completo del experimento
-2. Ejemplos visuales del cambio de dominio `FER2013` vs `AMI`
-3. Casos cualitativos de acierto, fallo y mejora por agregación temporal
+1. Full experimental pipeline diagram
+2. Visual examples of the `FER2013` versus `AMI` domain shift
+3. Qualitative cases for success, failure, and temporal aggregation improvement
 
-### Qué se decidió sacar del paquete editorial
+### What was intentionally removed from the editorial package
 
-- curvas `ROC/PR` con demasiadas series en una sola figura
-- baterías completas de `confusion_*.png` por método
-- gráficos con nombres de método demasiado largos en el eje x
-- tablas auxiliares que repetían resultados sin ayudar a la historia central
+- `ROC/PR` figures with too many series in one plot
+- full `confusion_*.png` batteries for every method
+- charts with method names too long for the axis
+- auxiliary tables that repeated results without improving the story
 
-La regla editorial ahora es: cada figura debe contestar una sola pregunta y seguir siendo legible sin leer el código del experimento.
+Editorial rule: each figure should answer one question and remain legible without reading the experiment code.
 
-## Resultados que sí serían publicables
+## Publishable outcomes
 
-- demostrar cuantitativamente que el dominio de reuniones rompe el supuesto FER clásico;
-- mostrar si `ViT` ofrece una representación más robusta o no;
-- mostrar que el pooling temporal simple ya recupera señal útil;
-- mostrar si una adaptación ligera sobre embeddings supera claramente a la predicción zero-shot;
-- reportar calibración y estabilidad, no solo accuracy.
+- show quantitatively that meeting video breaks standard FER assumptions
+- show whether `ViT` is more robust than `CNN`, or not
+- show that simple temporal pooling already recovers useful signal
+- show whether lightweight adaptation on embeddings beats zero-shot transfer
+- report calibration and stability, not just accuracy
 
-## Resultados negativos que también sirven
+## Publishable negative outcomes
 
-Si `ViT` no supera a `CNN`, eso sigue siendo publicable si se demuestra que:
+If `ViT` does not beat `CNN`, the paper is still useful if it shows that:
 
-- el dataset objetivo es pequeño;
-- la expresividad es sutil;
-- la ganancia depende más del pooling temporal que de la arquitectura;
-- el dominio objetivo favorece señales locales y faciales de baja resolución donde el `CNN` sigue siendo competitivo.
+- the target dataset is small
+- the affect is subtle
+- the gain depends more on temporal pooling than on architecture
+- the target domain favors local low-resolution facial cues where a `CNN` remains competitive
 
-Si el temporal attention pooling no mejora al promedio simple, eso también es útil:
+If temporal attention pooling does not beat mean pooling, that is also useful:
 
-- implica que la mayor parte de la señal recuperable ya está en una agregación estable de bajo costo;
-- fortalece el framing de método ligero y reproducible.
+- it suggests that most recoverable signal is already captured by a stable low-cost aggregation rule
+- it strengthens the lightweight and reproducible framing
 
-## Cambios concretos que conviene hacer en el código
+## Concrete code changes that matter
 
-1. Permitir múltiples `model_id` en configuración y registrar la familia (`cnn` / `vit`).
-2. Exportar embeddings por frame además de probabilidades.
-3. Guardar features agregadas de clip para entrenamiento ligero.
-4. Separar claramente:
-   - inferencia del backbone;
-   - pooling temporal;
-   - adaptación supervisada de clip;
-   - evaluación y calibración.
-5. Mantener un paquete de `paper_assets` curado:
-   - pocas figuras
-   - etiquetas cortas
-   - variedad visual real
-   - cero outputs redundantes en el directorio editorial
+1. Allow multiple `model_id` entries in configuration and record the family (`cnn` / `vit`).
+2. Export frame embeddings in addition to probabilities.
+3. Save aggregated clip features for lightweight supervised training.
+4. Keep a clean separation between
+   - backbone inference
+   - temporal pooling
+   - clip-level supervised adaptation
+   - evaluation and calibration
+5. Maintain a curated `paper_assets` package with
+   - few figures
+   - short labels
+   - genuine visual variety
+   - no redundant outputs
 
-## Estado de avance
+## Current project status
 
-- `annotation_pack` ya soporta `humano 1`, `humano 2`, `adjudicado` y `acuerdo`
-- el set actual tiene `100` clips doblemente evaluados
-- el mejor zero-shot en `test` sigue siendo `ViT | Single frame`
-- el mejor resultado global del proyecto es `Fusion | Clip LogReg`
-- la siguiente prioridad de escritura ya no es más benchmarking, sino narrativa del paper y selección cualitativa
+- the `annotation_pack` already supports `rater_1_label`, `rater_2_label`, `adjudicated_label`, and `agreement_status`
+- the current set contains `100` double-rated clips
+- the best zero-shot method on `test` is still `ViT | Single frame`
+- the best overall project result is `Fusion | Clip LogReg`
+- the next priority is paper narrative and qualitative selection, not more benchmarking
 
-## Claim final recomendado
+## Recommended final claim
 
-Este paper debe posicionarse como un estudio reproducible de transferencia de reconocimiento afectivo facial bajo cambio de dominio, centrado en la comparación entre representaciones `CNN` y `ViT` y en el valor real de la agregación temporal ligera para inferencia de valencia observable en video de reuniones.
+The paper should position itself as a reproducible study of cross-domain facial affect transfer, centered on the comparison between `CNN` and `ViT` representations and on the practical value of lightweight temporal aggregation for observable valence inference in meeting video.
 
-## Claim que debes evitar
+## Claims to avoid
 
-No afirmar:
+Do not claim:
 
-- que el sistema reconoce estados emocionales profundos;
-- que el modelo es listo para despliegue real;
-- que `ViT` o cualquier arquitectura es superior de forma universal;
-- que una mejora marginal implica comprensión contextual de la reunión.
+- that the system detects deep internal emotional states
+- that it is ready for real-world deployment
+- that `ViT`, or any architecture, is universally superior
+- that a marginal performance gain implies contextual understanding of the meeting
 
-## Orden recomendado del manuscrito
+## Recommended manuscript order
 
-### Introducción
+### Introduction
 
-Abrir con tres ideas:
+Open with three points:
 
-1. los modelos FER entrenados en datasets estándar sufren degradación fuerte al pasar a video de reuniones;
-2. no está claro si el beneficio potencial de `ViT` sobre `CNN` sobrevive ese cambio de dominio;
-3. una agregación temporal ligera y una adaptación supervisada pequeña pueden recuperar parte de la señal sin fine-tuning pesado.
+1. FER models trained on standard datasets degrade sharply when moved to meeting video
+2. it is unclear whether a `ViT` advantage over `CNN` survives this domain shift
+3. lightweight temporal aggregation and small supervised adaptation can recover part of the signal without heavy fine-tuning
 
-No meter figuras aquí. La introducción debe vender el problema y la pregunta.
+Do not place figures here. The introduction should sell the problem and the question.
 
-### Datos y anotación
+### Data and annotation
 
-Usar primero:
+Use first:
 
 1. `dataset_summary.csv/md`
 2. `label_distribution.png`
 3. `interrater_summary.csv/md`
 4. `interrater_overview.png`
 
-Mensaje de la sección:
+Section message:
 
-- el dataset es pequeño pero controlado y doblemente evaluado;
-- la distribución por split es legible y suficiente para un piloto;
-- el acuerdo humano es razonable, así que el cuello de botella no es solo ruido de anotación.
+- the dataset is small but controlled and double-rated
+- the split distribution is readable and acceptable for a pilot
+- human agreement is strong enough that annotation noise is not the only bottleneck
 
-Captions base:
+Base captions:
 
-- **Figura. `label_distribution.png`**: Distribución de etiquetas de valencia en `dev` y `test`, mostrando un balance moderado entre clases y tamaños homogéneos por split.
-- **Figura. `interrater_overview.png`**: Resumen del acuerdo entre los dos evaluadores humanos, con conteos de acuerdo/desacuerdo y métricas globales de consistencia.
-- **Tabla. `dataset_summary.csv/md`**: Resumen del conjunto AMI close-up usado en el estudio, con número de clips, splits y cobertura de anotación.
-- **Tabla. `interrater_summary.csv/md`**: Métricas de acuerdo entre evaluadores sobre los clips doblemente anotados.
+- **Figure. `label_distribution.png`**: Valence label distribution in `dev` and `test`, showing moderate class balance and comparable split sizes.
+- **Figure. `interrater_overview.png`**: Summary of agreement between the two human raters, including agreement-disagreement counts and global consistency metrics.
+- **Table. `dataset_summary.csv/md`**: Summary of the AMI close-up subset used in the study, with clip counts, split sizes, and annotation coverage.
+- **Table. `interrater_summary.csv/md`**: Interrater agreement metrics over the double-labeled clips.
 
-### Protocolo experimental
+### Experimental protocol
 
-Describir aquí las tres familias:
+Describe the three method families:
 
-1. transferencia directa `single-frame`;
-2. agregación temporal ligera sin entrenamiento fuerte;
-3. adaptación supervisada a nivel de clip con embeddings congelados.
+1. direct transfer with `single-frame`
+2. lightweight temporal aggregation without strong training
+3. clip-level supervised adaptation with frozen embeddings
 
-No hace falta una figura nueva si no está lista todavía. Si luego haces el diagrama del pipeline, este sería su lugar.
+If the pipeline diagram is later produced, this is where it belongs.
 
-### Resultados principales
+### Main results
 
-Orden recomendado:
+Recommended order:
 
 1. `main_test_macro_f1.png`
 2. `main_test_scorecard.png`
 3. `main_model_comparison.csv/md`
 
-Mensaje de la sección:
+Section message:
 
-- comparar primero familias de método;
-- después mostrar que la lectura no cambia al mirar varias métricas;
-- cerrar con la tabla para dejar valores exactos y significancia práctica.
+- first compare method families
+- then show that the ranking should be checked against several metrics
+- finish with the table so the reader can recover exact values
 
-Captions base:
+Base captions:
 
-- **Figura. `main_test_macro_f1.png`**: Ranking de los métodos principales en `test` según `Macro-F1`, destacando la degradación fuera de dominio y las diferencias entre `CNN` y `ViT`.
-- **Figura. `main_test_scorecard.png`**: Comparación compacta de `Macro-F1`, `Balanced Accuracy` y `Accuracy` para los métodos principales en `test`.
-- **Tabla. `main_model_comparison.csv/md`**: Resultados cuantitativos completos de los métodos principales en el split `test`.
+- **Figure. `main_test_macro_f1.png`**: Ranking of the main methods on `test` by `Macro-F1`, highlighting domain-shift degradation and the differences between `CNN` and `ViT`.
+- **Figure. `main_test_scorecard.png`**: Compact comparison of `Macro-F1`, `Balanced Accuracy`, and `Accuracy` for the main methods on `test`.
+- **Table. `main_model_comparison.csv/md`**: Full quantitative results for the main methods on the `test` split.
 
-### Resultados de adaptación a nivel de clip
+### Clip-level adaptation results
 
-Orden recomendado:
+Recommended order:
 
 1. `clip_models_macro_f1.png`
 2. `clip_model_comparison.csv/md`
 
-Mensaje de la sección:
+Section message:
 
-- esta es la parte donde aparece la mejora importante del proyecto;
-- conviene enfatizar que el mayor salto no viene del backbone solo, sino de la representación de clip y la adaptación ligera.
+- this is where the largest gain in the project appears
+- emphasize that the jump does not come from the backbone alone, but from clip representation and lightweight adaptation
 
-Captions base:
+Base captions:
 
-- **Figura. `clip_models_macro_f1.png`**: Desempeño de los modelos supervisados a nivel de clip, mostrando que la adaptación ligera sobre embeddings supera claramente a la transferencia directa.
-- **Tabla. `clip_model_comparison.csv/md`**: Comparación detallada de los modelos de adaptación a nivel de clip y fusión entre backbones.
+- **Figure. `clip_models_macro_f1.png`**: Performance of clip-level supervised models, showing that lightweight adaptation on embeddings clearly outperforms direct transfer.
+- **Table. `clip_model_comparison.csv/md`**: Detailed comparison of clip-level adaptation and fusion models.
 
-### Análisis de error
+### Error analysis
 
-Usar:
+Use:
 
 1. `selected_confusions.png`
 
-Mensaje de la sección:
+Section message:
 
-- el error dominante es la separación entre `neutral` y los extremos;
-- esta figura debe apoyar una discusión corta, no una galería extensa de matrices.
+- the dominant error is the boundary between `neutral` and the extremes
+- the figure should support a short discussion, not become a confusion-matrix gallery
 
-Caption base:
+Base caption:
 
-- **Figura. `selected_confusions.png`**: Matrices de confusión de modelos representativos, usadas para identificar patrones de error recurrentes bajo cambio de dominio.
+- **Figure. `selected_confusions.png`**: Confusion matrices for representative models, used to identify recurring error patterns under domain shift.
 
-## Secuencia final de assets en el paper
+## Final asset sequence
 
-Si el manuscrito queda corto, la secuencia más limpia es:
+If the manuscript needs to stay compact, the cleanest sequence is:
 
 1. `label_distribution.png`
 2. `interrater_overview.png`
@@ -343,11 +343,11 @@ Si el manuscrito queda corto, la secuencia más limpia es:
 5. `clip_models_macro_f1.png`
 6. `selected_confusions.png`
 
-Y las tablas:
+And the tables:
 
 1. `dataset_summary.csv/md`
 2. `interrater_summary.csv/md`
 3. `main_model_comparison.csv/md`
 4. `clip_model_comparison.csv/md`
 
-Con eso el paper mantiene una historia simple: datos y acuerdo, resultados principales, mejora por adaptación de clip, y análisis de error.
+That keeps the story simple: data and agreement, main results, gain from clip adaptation, and error analysis.

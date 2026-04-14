@@ -1,87 +1,95 @@
 # fer-meetings
 
-Estudio reproducible de transferencia de reconocimiento afectivo facial desde modelos FER estándar hacia video de reuniones AMI, con foco en comparación entre `CNN` y `Vision Transformer` bajo cambio de dominio.
+Reproducible pilot study on cross-domain transfer of facial affect recognition from standard FER backbones to AMI meeting video.
 
-## Qué evalúa este repo
+The canonical experiment compares a `CNN` backbone and a `Vision Transformer` under the same pipeline:
 
-La evaluación correcta aquí no es `ViT` en aislamiento. El protocolo final contrasta:
+- `single-frame` inference
+- lightweight temporal pooling (`smoothed`, `vote`)
+- dev-set calibration
+- clip-level adaptation on frozen embeddings
+- `CNN+ViT` fusion at probability and representation level
 
-- un backbone `CNN`: `firedfrog/convnext-tiny-224-emotion-prediction`
-- un backbone `ViT`: `mo-thecreator/vit-Facial-Expression-Recognition`
+The point of the repository is not to claim a universal winner between `CNN` and `ViT`. The point is to measure how much performance breaks under domain shift and how much of that signal can be recovered with cheap temporal aggregation and light supervised adaptation.
 
-ambos bajo exactamente las mismas familias experimentales:
-
-- `single-frame`
-- `temporal pooling` (`smoothed`, `vote`)
-- `calibración` en `dev`
-- `clip-level adaptation` sobre embeddings congelados (`mean_embedding_logreg`, `mean_embedding_hgb`, `attention_pooling`)
-- `hybrid fusion` entre `CNN` y `ViT`:
-  - ensemble probabilístico (`mean`, `entropy-weighted`)
-  - fusión de embeddings a nivel de clip (`cnn_vit_fusion`)
-  - adaptación ligera `CORAL` y `MMD` sobre embeddings de clip
-
-Eso permite responder si la mejora viene de la arquitectura, del pooling temporal o de la adaptación ligera de clip. Para este paper, ese contraste es bastante más defendible que “probar solo ViT” o añadir una arquitectura nueva sin una hipótesis clara.
-
-## Configuración canónica
+## Canonical experiment
 
 - Config: [configs/ami_av_cnn_vit_publication.json](configs/ami_av_cnn_vit_publication.json)
-- Manifest final: [data/interim/ami_av_manifest_publication.csv](data/interim/ami_av_manifest_publication.csv)
-- Corrida final: [results/ami_av_publication](results/ami_av_publication)
-- Assets finales: [results/ami_av_publication/paper_assets](results/ami_av_publication/paper_assets)
-- Estado para escritura: [docs/paper_progress.md](docs/paper_progress.md)
+- Manifest: [data/interim/ami_av_manifest_publication.csv](data/interim/ami_av_manifest_publication.csv)
+- Canonical run: [results/ami_av_publication](results/ami_av_publication)
+- Paper-facing assets: [results/ami_av_publication/paper_assets](results/ami_av_publication/paper_assets)
+- Writing status: [docs/paper_progress.md](docs/paper_progress.md)
+- Reproducibility guide: [docs/reproducibility.md](docs/reproducibility.md)
 
-## Reproducibilidad y artefactos versionados
+## What this repository evaluates
 
-El repositorio conserva el código, la configuración, el manifiesto final y un conjunto curado de resultados listos para inspección y escritura. Los datos descargados, videos y dumps pesados regenerables no se versionan.
+- Cross-domain transfer from FER2013-style training sources to AMI close-up meeting clips.
+- Representation differences between `CNN` and `ViT` backbones under the same three-class valence mapping.
+- Whether temporal aggregation helps beyond a single center frame.
+- Whether clip-level adaptation on frozen embeddings recovers more signal than zero-shot frame predictions alone.
 
-Se conservan en Git:
+## Repository layout
 
-- código fuente, tests y configuración
-- `data/interim/ami_av_manifest_publication.csv`
-- `results/ami_av_publication/annotation_pack`
-- `results/ami_av_publication/paper_assets`
-- `results/ami_av_publication/reports`
-- métricas compactas y etiquetas consolidadas del run canónico
+- `src/fer_meetings/`: experiment code, reporting utilities, annotation pack, and bundle export.
+- `tests/`: unit tests for configuration, temporal logic, annotation tooling, fusion, and clip models.
+- `configs/`: canonical experiment configuration and label mapping.
+- `docs/`: annotation instructions, paper outline, writing status, and reproducibility notes.
+- `data/interim/`: versioned manifest for the canonical AMI subset.
+- `results/ami_av_publication/`: compact versioned outputs from the canonical run.
 
-No se suben al repositorio:
+## What is versioned
 
-- videos AMI descargados
-- snapshots completos de datasets
-- `frame_details.csv`, `clip_features.csv` y dumps completos de predicción
-- zips duplicados de resultados
+The repository keeps the files needed to inspect, reproduce, and write up the canonical run:
 
-Todo lo omitido se puede regenerar con los comandos del flujo recomendado y la configuración canónica.
+- source code, tests, configuration, and GitHub workflow files
+- the canonical AMI manifest
+- the HTML annotation pack and review sheet
+- compact evaluation metrics and resolved clip labels
+- paper figures, tables, and short experiment reports
 
-## Flujo recomendado
+The repository does not keep bulky artifacts that are easy to regenerate:
+
+- downloaded AMI videos
+- downloaded FER snapshots
+- full frame-level dumps such as `frame_details.csv`
+- full clip feature dumps such as `clip_features.csv`
+- duplicate zip archives and exhaustive plotting exports
+
+## Quick start
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
+make test
 ```
 
-### 1. Datos
+## End-to-end reproduction
 
-Descargar `FER2013` desde Hugging Face:
+### 1. Fetch the source FER data
 
 ```bash
 make fetch-fer
 ```
 
-Descargar subconjunto utilizable de `ami-av`:
+This downloads the `Jeneral/fer-2013` dataset snapshot into `data/raw/hf/fer2013`.
+
+### 2. Fetch a small AMI AV subset and build the manifest
 
 ```bash
 make fetch-ami-av-subset
 make manifest-ami-av
 ```
 
-### 2. Corrida prelabels
+The resulting manifest is written to `data/interim/ami_av_manifest_publication.csv`.
+
+### 3. Run the pre-label stage
 
 ```bash
 make experiment-prelabels
 ```
 
-Eso deja:
+This stage produces:
 
 - `predictions.csv`
 - `frame_details.csv`
@@ -89,41 +97,39 @@ Eso deja:
 - `annotation_pack/index.html`
 - `annotation_pack/annotation_sheet.csv`
 
-### 3. Anotación humana
+### 4. Review and annotate clips
 
-Abre:
+Open [results/ami_av_publication/annotation_pack/index.html](results/ami_av_publication/annotation_pack/index.html) in a browser.
 
-- [results/ami_av_publication/annotation_pack/index.html](results/ami_av_publication/annotation_pack/index.html)
+The annotation interface lets you:
 
-La interfaz permite:
+- set `gold_label`
+- inspect `rater_1_label`, `rater_2_label`, `adjudicated_label`, and `agreement_status`
+- filter by split, label status, and free text
+- export an updated `annotation_sheet.csv`
 
-- asignar `gold_label` por clip
-- visualizar `humano 1`, `humano 2`, `adjudicado` y `acuerdo`
-- filtrar por `split`, `labeled/unlabeled` y texto
-- guardar una copia CSV actualizada desde el navegador
-
-Después de exportar, reemplaza el archivo del proyecto:
+If you export a revised sheet manually, place it back at:
 
 - [results/ami_av_publication/annotation_pack/annotation_sheet.csv](results/ami_av_publication/annotation_pack/annotation_sheet.csv)
 
-### 4. Corrida postlabels
+### 5. Run the post-label stage
 
 ```bash
 make experiment-postlabels
 ```
 
-Eso ejecuta:
+This stage runs:
 
-- resolución de labels
-- `scenario_splits`
-- evaluación principal
-- modelos clip-level
-- tablas y figuras
-- reportes reproducibles
+- interrater agreement
+- scenario split generation
+- main evaluation and calibration
+- clip-level models
+- paper tables and figures
+- reproducibility reports
 
-## Salidas finales para paper
+## Main outputs
 
-Tablas principales:
+Core tables:
 
 - [main_model_comparison.csv](results/ami_av_publication/paper_assets/tables/main_model_comparison.csv)
 - [clip_model_comparison.csv](results/ami_av_publication/paper_assets/tables/clip_model_comparison.csv)
@@ -131,7 +137,7 @@ Tablas principales:
 - [label_distribution.csv](results/ami_av_publication/paper_assets/tables/label_distribution.csv)
 - [interrater_summary.csv](results/ami_av_publication/paper_assets/tables/interrater_summary.csv)
 
-Figuras principales:
+Core figures:
 
 - [main_test_macro_f1.png](results/ami_av_publication/paper_assets/figures/main_test_macro_f1.png)
 - [main_test_scorecard.png](results/ami_av_publication/paper_assets/figures/main_test_scorecard.png)
@@ -140,41 +146,33 @@ Figuras principales:
 - [interrater_overview.png](results/ami_av_publication/paper_assets/figures/interrater_overview.png)
 - [selected_confusions.png](results/ami_av_publication/paper_assets/figures/selected_confusions.png)
 
-Reportes:
+Core reports:
 
 - [experiment_card.md](results/ami_av_publication/reports/experiment_card.md)
 - [data_sheet.md](results/ami_av_publication/reports/data_sheet.md)
 - [limitations_and_ethics.md](results/ami_av_publication/reports/limitations_and_ethics.md)
 - [reproducibility_checklist.md](results/ami_av_publication/reports/reproducibility_checklist.md)
 
-## Interpretación metodológica
+## Current headline results
 
-Para este proyecto, la mejor forma de evaluar `ViT` no es “ponerlo solo” ni “añadir algo nuevo” sin hipótesis. El diseño fuerte es:
+- Best zero-shot main result on `test`: `ViT | single_frame`
+  `Macro-F1 = 0.4552`, `Balanced accuracy = 0.4472`
+- Best clip-level result on `test`: `Fusion | mean_embedding_logreg`
+  `Macro-F1 = 0.6244`, `Balanced accuracy = 0.6944`
+- Human agreement on the double-rated set:
+  `observed agreement = 0.7700`, `Cohen's kappa = 0.6175`
 
-1. comparar `ViT` contra un `CNN` competitivo bajo el mismo pipeline;
-2. medir qué cambia entre `single-frame`, `pooling` y `clip-level adaptation`;
-3. usar `macro-F1` y `balanced accuracy` como métricas centrales;
-4. tratar el problema como cambio de dominio y representación, no como `SOTA` de FER.
+## GitHub-ready export
 
-Si luego quieres extender el paper, la siguiente mejora razonable no es una `GNN` forzada; sería uno de estos dos:
+To create a clean standalone folder that can be uploaded as a repository:
 
-- análisis explícito de `domain shift` en el espacio de embeddings (`CNN` vs `ViT`)
-- un mejor bloque temporal sobre embeddings congelados
+```bash
+make github-bundle
+```
 
-## Criterio de poda de resultados
+That command creates `build/github_repo/` with the English documentation, source tree, tests, canonical config, versioned manifest, and compact canonical results.
 
-El directorio `paper_assets` ahora es un paquete curado de resultados para escritura. Ahí solo quedan las tablas y figuras que sí entran en la narrativa del paper:
-
-- comparación principal en test
-- scorecard compacto de métricas
-- ranking de adaptación a nivel de clip
-- distribución de etiquetas
-- acuerdo entre evaluadores
-- panel pequeño de matrices de confusión
-
-Los archivos crudos del pipeline (`predictions.csv`, `metrics.json`, `confusion_matrices.csv`, `clip_features.csv`, etc.) se conservan en `results/ami_av_publication` para reproducibilidad, pero ya no se duplican como assets de paper si no aportan claridad visual o narrativa.
-
-## Comandos cortos
+## Short command list
 
 ```bash
 make fetch-fer
@@ -182,5 +180,6 @@ make fetch-ami-av-subset
 make manifest-ami-av
 make experiment-prelabels
 make experiment-postlabels
+make github-bundle
 make test
 ```

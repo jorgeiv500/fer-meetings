@@ -73,10 +73,10 @@ class AnnotationPackTests(unittest.TestCase):
             render_html(rows, Path(temp_dir), output_path)
             html_text = output_path.read_text(encoding="utf-8")
 
-        self.assertIn("Guardar CSV", html_text)
+        self.assertIn("Save CSV", html_text)
         self.assertIn("data-action=\"set-label\"", html_text)
         self.assertIn("window.showSaveFilePicker", html_text)
-        self.assertIn("humano 2", html_text)
+        self.assertIn("rater 2", html_text)
         self.assertIn("\"clip_id\": \"clip_1\"", html_text)
 
 

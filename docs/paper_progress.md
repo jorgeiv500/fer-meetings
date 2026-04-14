@@ -1,36 +1,36 @@
 # Paper Progress
 
-## Estado actual
+## Current state
 
-- Corrida canónica: [results/latest_publication](../results/latest_publication)
-- Dataset anotado: `100` clips AMI close-up
+- Canonical run: [results/ami_av_publication](../results/ami_av_publication)
+- Annotated dataset: `100` AMI close-up clips
 - Splits: `50 dev / 50 test`
-- Familias fuente: `CNN`, `ViT`
-- Extensiones evaluadas: `temporal pooling`, `calibración`, `clip-level adaptation`, `hybrid fusion`
+- Backbone families: `CNN`, `ViT`
+- Evaluated extensions: `temporal pooling`, `calibration`, `clip-level adaptation`, `hybrid fusion`
 
-## Hallazgos consolidados
+## Consolidated findings
 
-- Mejor resultado principal en `test`: `ViT | Single frame`
+- Best main result on `test`: `ViT | Single frame`
   - `Macro-F1 = 0.4552`
   - `Balanced accuracy = 0.4472`
-- Mejor resultado de adaptación a nivel de clip: `Fusion | Clip LogReg`
+- Best clip-level result: `Fusion | Clip LogReg`
   - `Macro-F1 = 0.6244`
   - `Balanced accuracy = 0.6944`
-- Acuerdo humano:
-  - `100` clips doblemente evaluados
+- Human agreement
+  - `100` double-rated clips
   - `observed agreement = 0.7700`
   - `Cohen's kappa = 0.6175`
 
-## Lectura metodológica
+## Methodological readout
 
-- El backbone `ViT` es el mejor cero-shot en `test`, pero la mejora grande aparece al pasar a adaptación supervisada ligera a nivel de clip.
-- El `CNN` puro se degrada mucho en cero-shot, aunque mejora de forma sustancial después de calibración.
-- La fusión `CNN+ViT` es más valiosa como representación de clip que como ensemble probabilístico simple.
-- Las matrices de confusión muestran que el cuello de botella sigue siendo separar `neutral` de los extremos, especialmente para los métodos zero-shot.
+- `ViT` is the strongest zero-shot backbone on `test`, but the largest improvement comes from lightweight supervised clip adaptation.
+- The standalone `CNN` degrades heavily in zero-shot transfer, although it improves materially after calibration.
+- `CNN+ViT` fusion is more useful as a clip representation than as a simple probability ensemble.
+- The main failure mode remains the separation of `neutral` from the two extremes, especially in zero-shot settings.
 
-## Paquete visual final del paper
+## Final visual package
 
-### Figuras core
+### Core figures
 
 1. [main_test_macro_f1.png](../results/ami_av_publication/paper_assets/figures/main_test_macro_f1.png)
 2. [main_test_scorecard.png](../results/ami_av_publication/paper_assets/figures/main_test_scorecard.png)
@@ -39,7 +39,7 @@
 5. [interrater_overview.png](../results/ami_av_publication/paper_assets/figures/interrater_overview.png)
 6. [selected_confusions.png](../results/ami_av_publication/paper_assets/figures/selected_confusions.png)
 
-### Tablas core
+### Core tables
 
 1. [main_model_comparison.csv](../results/ami_av_publication/paper_assets/tables/main_model_comparison.csv)
 2. [clip_model_comparison.csv](../results/ami_av_publication/paper_assets/tables/clip_model_comparison.csv)
@@ -47,26 +47,26 @@
 4. [label_distribution.csv](../results/ami_av_publication/paper_assets/tables/label_distribution.csv)
 5. [interrater_summary.csv](../results/ami_av_publication/paper_assets/tables/interrater_summary.csv)
 
-## Qué ya no entra en el paper-facing package
+## What no longer belongs in the paper-facing package
 
-- curvas `PR/ROC` con demasiadas series
-- todas las `confusion_*.png` por método
-- tablas auxiliares que repetían per-class metrics sin aportar foco narrativo
-- históricos de entrenamiento que no sostienen un claim principal del paper
+- overloaded `PR/ROC` curves with too many series
+- complete `confusion_*.png` galleries for every method
+- auxiliary tables that repeat per-class metrics without changing the story
+- training-history artifacts that do not support a central paper claim
 
-Los outputs crudos siguen en `results/ami_av_publication` para análisis reproducible, pero no forman parte del set editorial.
+The raw outputs remain in `results/ami_av_publication` for reproducible inspection, but they are no longer duplicated as manuscript-facing assets.
 
-## Pendientes para la escritura
+## Writing backlog
 
-1. Añadir una figura esquemática del pipeline completo.
-2. Seleccionar 3-4 casos cualitativos de éxito/fallo/mejora por pooling.
-3. Decidir si los desacuerdos entre evaluadores se adjudican antes del corte final del manuscrito.
-4. Redactar la sección de error analysis con apoyo en `selected_confusions.png`.
-5. Convertir `docs/paper_outline.md` en un draft de secciones con captions y mensajes por figura.
+1. Add a schematic figure for the full pipeline.
+2. Select three or four qualitative success, failure, and pooling-improvement cases.
+3. Decide whether remaining rater disagreements should be fully adjudicated before the final manuscript freeze.
+4. Draft the error-analysis section around `selected_confusions.png`.
+5. Turn [docs/paper_outline.md](paper_outline.md) into section-ready prose and captions.
 
-## Orden editorial sugerido
+## Suggested editorial order
 
-### Cuerpo principal
+### Main body
 
 1. `dataset_summary.csv/md`
 2. `label_distribution.png`
@@ -79,15 +79,15 @@ Los outputs crudos siguen en `results/ami_av_publication` para análisis reprodu
 9. `clip_model_comparison.csv/md`
 10. `selected_confusions.png`
 
-### Mensaje narrativo por bloque
+### Narrative role by block
 
-- **Datos y anotación**: el corpus es pequeño pero usable, y el acuerdo humano respalda la tarea.
-- **Resultados principales**: el cambio de dominio degrada fuerte el zero-shot y no basta con mirar una sola métrica.
-- **Adaptación de clip**: la mayor recuperación de desempeño aparece al usar embeddings de clip y adaptación ligera.
-- **Análisis de error**: la frontera `neutral` vs extremos sigue siendo el punto más frágil.
+- **Data and annotation**: the corpus is small but usable, and human agreement supports the task.
+- **Main results**: domain shift hurts zero-shot transfer substantially, and one metric is not enough.
+- **Clip adaptation**: most of the recoverable gain appears once frozen clip embeddings are used with lightweight supervision.
+- **Error analysis**: `neutral` versus the extremes remains the fragile decision boundary.
 
-## Estado de carpetas de resultados
+## Result directory status
 
-- En `results` solo queda una corrida canónica: [results/ami_av_publication](../results/ami_av_publication)
-- [results/latest_publication](../results/latest_publication) y `latest_paper_assets` son symlinks al run actual
-- No se encontraron carpetas adicionales de corridas anteriores para borrar
+- The only canonical run under `results` is [results/ami_av_publication](../results/ami_av_publication)
+- `results/latest_publication` and `results/latest_paper_assets` are symlinks that point to the canonical run
+- No additional historical run directories were found that still needed cleanup

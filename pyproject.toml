@@ -32,6 +32,7 @@ fer-run-pilot = "fer_meetings.run_pilot:main"
 fer-evaluate = "fer_meetings.evaluate:main"
 fer-train-clip-models = "fer_meetings.train_clip_models:main"
 fer-make-paper-assets = "fer_meetings.paper_assets:main"
+fer-build-github-bundle = "fer_meetings.github_bundle:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
